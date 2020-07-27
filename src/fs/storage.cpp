@@ -55,6 +55,7 @@ NodeHash Storage::getNodeHash(UniqueHash *hashUnique)
    @param   countDirectory  Max count of directories.
    @param   countBlock      Max count of blocks.
    @param   countNode       Count of nodes. */
+   //buffer是meta的基址，bufferBlock是data的基址，countFile是系统支持的最大文件数量，countDirectory是系统支持的最大目录数量，countBlock是2000写死了，countNode从配置获取的
 Storage::Storage(char *buffer, char* bufferBlock, uint64_t countFile, uint64_t countDirectory, uint64_t countBlock, uint64_t countNode)
 {
     if ((buffer == NULL) || (bufferBlock == NULL) || (countFile == 0) || (countDirectory == 0) ||
@@ -62,8 +63,10 @@ Storage::Storage(char *buffer, char* bufferBlock, uint64_t countFile, uint64_t c
         fprintf(stderr, "Storage::Storage: parameter error.\n");
         exit(EXIT_FAILURE);             /* Exit due to parameter error. */
     } else {
+        //HashTable的空间以meta的其实地址来存放，大小是目录数+文件数
         hashtable = new HashTable(buffer, countDirectory + countFile); /* Initialize hash table. */
         Debug::notifyInfo("sizeof Hash Table = %d MB", hashtable->sizeBufferUsed / 1024 / 1024);
+
 
         tableFileMeta = new Table<FileMeta>(buffer + hashtable->sizeBufferUsed, countFile); /* Initialize file meta table. */
         Debug::notifyInfo("sizeof File Meta Size = %d MB", tableFileMeta->sizeBufferUsed / 1024 / 1024);

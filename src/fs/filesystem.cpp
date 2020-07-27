@@ -1398,11 +1398,13 @@ bool FileSystem::readDirectoryMeta(const char *path, DirectoryMeta *meta, uint64
  *      end_block = (offset + size - 1) / BLOCK_SIZE
  */
 
+
+
 /* Fill file position information for read and write. No check on parameters. 
-   @param   size        Size to operate.
-   @param   offset      Offset to operate. 
-   @param   fpi         File position information.
-   @param   metaFile    File meta. */
+   @param   size        Size to operate. 写入数据的长度
+   @param   offset      Offset to operate. 写入数据的offset
+   @param   fpi         File position information. 数据的分布信息
+   @param   metaFile    File meta. */ 文件元数据
 /* FIXME: review logic here. */
 void FileSystem::fillFilePositionInformation(uint64_t size, uint64_t offset, file_pos_info *fpi, FileMeta *metaFile)
 {
@@ -1410,21 +1412,34 @@ void FileSystem::fillFilePositionInformation(uint64_t size, uint64_t offset, fil
     uint64_t offsetStart, offsetEnd;
     offsetStart = offset;  /* Relative offset of start byte to operate in file. */
     offsetEnd = size + offset - 1; /* Relative offset of end byte to operate in file. */
+    //这两个信息是client传来的，分别是写入数据的起始地址和终止地址
+
     uint64_t boundStartExtent, boundEndExtent, /* Bound of start extent and end extent. */
              offsetInStartExtent, offsetInEndExtent, /* Offset of start byte in start extent and end byte in end extent. */
              sizeInStartExtent, sizeInEndExtent; /* Size to operate in start extent and end extent. */
+    //这6个数据记录了Extent的信息，Extent是一个信息结构，记录了连续的block块的信息而已
+
     uint64_t offsetStartOfCurrentExtent = 0; /* Relative offset of start byte in current extent. */
     Debug::debugItem("Stage 9.");
+    //一个FileMeta上保存了多个不同Node的数据信息，因为data会保存在多个不同的Node上
     for (uint64_t i = 0; i < metaFile->count; i++) {
+        //一开始offsetStartOfCurrentExtent是0,这里计算了每个node上的Extent的block数量，乘上BLOCK_SIZE后得到每个Extent的占用空间。如果发现了client指定的这个offset
         if ((offsetStartOfCurrentExtent + metaFile->tuple[i].countExtentBlock * BLOCK_SIZE - 1) >= offsetStart) { /* A -1 is needed to locate offset of end byte in current extent. */
+            //这里break后，赋值一个offsetInStartExtent，也就是说我们找到了在startExtent里的offset了。
+            //此外也记录了boundStartExtent的下标
+            //也记录了sizeInStartExtent
             boundStartExtent = i;       /* Assign bound of extent containing start byte. */
             offsetInStartExtent = offsetStart - offsetStartOfCurrentExtent; /* Assign relative offset of start byte in start extent. */
             sizeInStartExtent = metaFile->tuple[i].countExtentBlock * BLOCK_SIZE - offsetInStartExtent; /* Assign size to opreate in start extent. */
             break;
         }
+        //这行代码很好理解啊，for循环的时候每次往后累加extent的。
         offsetStartOfCurrentExtent += metaFile->tuple[i].countExtentBlock * BLOCK_SIZE; /* Add count of blocks in current extent. */
     }
+    //这里赋值是0说明这个offsetStartOfCurrentExtent是个工具人。
     offsetStartOfCurrentExtent = 0;     /* Relative offset of end byte in current extent. */
+
+    //如伐炮制，找到end的三个信息。
     Debug::debugItem("Stage 10. metaFile->count = %lu", metaFile->count);
     for (uint64_t i = 0; i < metaFile->count; i++) {
         if ((offsetStartOfCurrentExtent + metaFile->tuple[i].countExtentBlock * BLOCK_SIZE - 1) >= offsetEnd) { /* A -1 is needed to locate offset of end byte in current extent. */
@@ -1437,13 +1452,15 @@ void FileSystem::fillFilePositionInformation(uint64_t size, uint64_t offset, fil
     }
     Debug::debugItem("Stage 11. boundStartExtent = %lu, boundEndExtent = %lu", boundStartExtent, boundEndExtent);
     if (boundStartExtent == boundEndExtent) { /* If in one extent. */
+        //如果在同一个Extent里，fpi的len=1
         fpi->len = 1;                   /* Assign length. */
+        //
         fpi->tuple[0].node_id = metaFile->tuple[boundStartExtent].hashNode; /* Assign node ID. */
         fpi->tuple[0].offset = metaFile->tuple[boundStartExtent].indexExtentStartBlock * BLOCK_SIZE + offsetInStartExtent; /* Assign offset. */
         fpi->tuple[0].size = size;
     } else {                            /* Multiple extents. */
         Debug::debugItem("Stage 12.");
-        fpi->len = boundEndExtent - boundStartExtent + 1; /* Assign length. */
+        fpi->len = boundEndExtent - boundStartExtent + 1; /* Assign length. */ //这是extent的个数
         fpi->tuple[0].node_id = metaFile->tuple[boundStartExtent].hashNode; /* Assign node ID of start extent. */
         fpi->tuple[0].offset = metaFile->tuple[boundStartExtent].indexExtentStartBlock * BLOCK_SIZE + offsetInStartExtent; /* Assign offset. */
         fpi->tuple[0].size = sizeInStartExtent; /* Assign size. */
@@ -1564,6 +1581,7 @@ bool FileSystem::extentReadEnd(uint64_t key, char* path)
    @param   metaFile    File meta buffer.
    @param   key         Key buffer to unlock.
    @return              If operation succeeds then return true, otherwise return false. */
+   //path,size,offset是sendBuffer的，fpi,key_offset,key是recvBuffer的
 bool FileSystem::extentWrite(const char *path, uint64_t size, uint64_t offset, file_pos_info *fpi, uint64_t *key_offset, uint64_t *key) /* Write. */
 {
     Debug::debugTitle("FileSystem::write");
@@ -1573,7 +1591,9 @@ bool FileSystem::extentWrite(const char *path, uint64_t size, uint64_t offset, f
         return false;                   /* Null parameter error. */
     else {
         UniqueHash hashUnique;
+        //拿目录path
         HashTable::getUniqueHash(path, strlen(path), &hashUnique); /* Get unique hash. */
+        //拿当前节点的nodeHash
         NodeHash hashNode = storage->getNodeHash(&hashUnique); /* Get node hash by unique hash. */
         AddressHash hashAddress = HashTable::getAddressHash(&hashUnique); /* Get address hash by unique hash. */
         if (checkLocal(hashNode) == true) { /* If local node. */
@@ -1583,20 +1603,25 @@ bool FileSystem::extentWrite(const char *path, uint64_t size, uint64_t offset, f
             {
                 uint64_t indexFileMeta;
                 bool isDirectory;
+                //分配一个FileMeta的空间
                 FileMeta *metaFile = (FileMeta *)malloc(sizeof(FileMeta));
+                //从hashtable里找这个indexFileMeta，不存在直接返回false。
                 if (storage->hashtable->get(&hashUnique, &indexFileMeta, &isDirectory) == false) { /* If path does not exist. */
                     result = false;     /* Fail due to path does not exist. */
                 } else {
                     Debug::debugItem("Stage 2. Get meta.");
+                    //如果是一个目录也返回，写不了
                     if (isDirectory == true) { /* If directory meta. */
                         result = false; /* Fail due to not file. */
                     } else {
+                        //根据indexFileMeta拿到FileMeta
                         if (storage->tableFileMeta->get(indexFileMeta, metaFile) == false) {
                             result = false; /* Fail due to get file meta error. */
                         } else {
                             if (((0xFFFFFFFFFFFFFFFF - offset) < size) || (size == 0)) {
                                 result = false; /* Fail due to offset + size will cause overflow or size is zero. */
                             } else {
+                                //这里判断了是否要分配新的block
                                 Debug::debugItem("Stage 3.");
                                 if ((metaFile->size == 0) || ((offset + size - 1) / BLOCK_SIZE > (metaFile->size - 1) / BLOCK_SIZE)) { /* Judge if new blocks need to be created. */
                                     uint64_t countExtraBlock; /* Count of extra blocks. At least 1. */
@@ -1658,6 +1683,7 @@ bool FileSystem::extentWrite(const char *path, uint64_t size, uint64_t offset, f
                                         result = true;
                                     }
                                 } else {
+                                    //如果不需要分配新的block，而是直接写的话
                                     metaFile->size = (offset + size) > metaFile->size ? (offset + size) : metaFile->size; /* Update size of file in meta. */
                                     fillFilePositionInformation(size, offset, fpi, metaFile); /* Fill file position information. */
                                      /*printf("(int)(fpi->len) = %d, (int)(fpi->offset[0]) = %d, (int)(fpi->size[0]) = %d\n", 

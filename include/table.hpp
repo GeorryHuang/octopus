@@ -321,6 +321,7 @@ template<typename T> Table<T>::Table(char *buffer, uint64_t count)
             fprintf(stderr, "Table: count should be times of eight.\n");
             exit(EXIT_FAILURE);         /* Fail due to count alignment. */
         } else {
+            
             bitmapItems = new Bitmap(count, buffer + count * sizeof(T)); /* Initialize item bitmap. */
             items = (T *)(buffer); /* Initialize items array. */
             sizeBufferUsed = count / 8 + count * sizeof(T); /* Size of used bytes in buffer. */

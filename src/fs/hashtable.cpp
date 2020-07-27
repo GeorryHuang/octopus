@@ -523,17 +523,22 @@ HashTable::HashTable(char *buffer, uint64_t count)
         exit(EXIT_FAILURE);
     } else {
         itemsHash = (HashItem *)buffer; /* Hash items pointer. */
+        //整个buffer从左到右分别是，hash的item区域，bitmap区域和chainedItem区域，所以bitmap的区域从buffer+HASH_ITMES_SIZE开始
         bitmapChainedItems = new Bitmap( /* Bitmap for chained items. */
             count, buffer + HASH_ITEMS_SIZE /* Need to be divided by 8 in bitmap class. */
         );
+        //这里说了，bitmap的长度是count/8。
         itemsChained = (ChainedItem *)(buffer + HASH_ITEMS_SIZE + count / 8); /* Chained items pointer. Size of bitmap is count / 8. */
+
         if (bitmapChainedItems->set(0) == false) { /* Disable position 0 in bitmap due to reserved use. */
             fprintf(stderr, "HashTable: bitmap set error.\n");
             exit(EXIT_FAILURE);
         }
+        //这个sizeBufferdUsed是整个HashTable使用空间的总大小。
         sizeBufferUsed = HASH_ITEMS_SIZE + count / 8 + sizeof(ChainedItem) * count; /* Calculate size of used bytes in buffer. */
         // Debug::debugItem("itemsChainedAddress = %lx, sizeBufferUsed = %x", itemsChained, sizeBufferUsed);
         headFreeBit = NULL;
+        //这个FreeBit是一个记录空闲bit位的链表，
         FreeBit *currentFreeBit;
         for (uint64_t i = 1; i < bitmapChainedItems->countTotal(); i++) { /* Traverse all chained items to initialize free bits. Start from 1. */
             currentFreeBit = (FreeBit *)malloc(sizeof(FreeBit));
