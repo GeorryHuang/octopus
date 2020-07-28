@@ -8,6 +8,7 @@ typedef char* nrfsFile;
 
 #define MAX_MESSAGE_BLOCK_COUNT 10      /* Max count of block index in a message. */
 
+//文件位置三元组
 typedef struct 
 {
 	uint16_t node_id;
@@ -15,12 +16,14 @@ typedef struct
 	uint64_t size;
 } file_pos_tuple;
 
+//文件位置信息
 struct file_pos_info
 {
 	uint32_t len;
 	file_pos_tuple tuple[MAX_MESSAGE_BLOCK_COUNT];
 };
 
+//文件属性
 /* getattr */
 struct nrfsfileattr
 {
@@ -43,6 +46,7 @@ struct nrfsfileattr
 /** Classes and structures. **/
 typedef uint64_t NodeHash;              /* Node hash. */
 
+//文件元数据三元组
 typedef struct 
 {
 	NodeHash hashNode; /* Node hash array of extent. */

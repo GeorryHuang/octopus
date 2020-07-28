@@ -5,7 +5,7 @@ RPCServer::RPCServer(int _cqSize) :cqSize(_cqSize) {
 	UnlockWait = false;
 	conf = new Configuration();
 	mem = new MemoryManager(mm, conf->getServerCount(), 2);
-	mm = mem->getDmfsBaseAddress();
+	mm = mem->getDmfsBaseAddress();//共享内存起始地址
 	Debug::notifyInfo("DmfsBaseAddress = %lx, DmfsTotalSize = %lx",
 		mem->getDmfsBaseAddress(), mem->getDmfsTotalSize());
 	ServerCount = conf->getServerCount();
@@ -13,13 +13,14 @@ RPCServer::RPCServer(int _cqSize) :cqSize(_cqSize) {
 	client = new RPCClient(conf, socket, mem, (uint64_t)mm);
 	tx = new TxManager(mem->getLocalLogAddress(), mem->getDistributedLogAddress());
 	socket->RdmaListen();
+	/* Constructor of file system. */
 	fs = new FileSystem((char *)mem->getMetadataBaseAddress(),
-              (char *)mem->getDataAddress(),
-              1024 * 20,/* Constructor of file system. */
-              1024 * 30,
+              (char *)mem->getDataAddress(),  
+              1024 * 20,//最大文件数
+              1024 * 30,//最大目录数
               2000,
               conf->getServerCount(),    
-              socket->getNodeID());
+              socket->getNodeID());//最后一个参数是本server节点id号
 	fs->rootInitialize(socket->getNodeID());
 	wk = new thread[cqSize]();
 	for (int i = 0; i < cqSize; i++)
