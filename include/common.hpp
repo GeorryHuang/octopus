@@ -11,15 +11,15 @@ typedef char* nrfsFile;
 //文件位置三元组
 typedef struct 
 {
-	uint16_t node_id;
-	uint64_t offset;
-	uint64_t size;
+	uint16_t node_id;//机器ID号
+	uint64_t offset;//相对于共享内存的offset
+	uint64_t size; //操作的数据长度
 } file_pos_tuple;
 
 //文件位置信息
 struct file_pos_info
 {
-	uint32_t len;
+	uint32_t len;//	tuple中的元素个数
 	file_pos_tuple tuple[MAX_MESSAGE_BLOCK_COUNT];
 };
 

@@ -181,8 +181,8 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 	} else {
     	fs->parseMessage((char*)send, receiveBuffer);
     	// fs->recursivereaddir("/", 0);
-	Debug::debugItem("Contract Receive Buffer, size = %d.", size);
-	size -= ContractReceiveBuffer(send, recv);
+		Debug::debugItem("Contract Receive Buffer, size = %d.", size);
+		size -= ContractReceiveBuffer(send, recv);
     	if (send->message == MESSAGE_RAWREAD) {
     		ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
     		uint64_t *value = (uint64_t *)mem->getDataAddress();
@@ -197,9 +197,9 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
     		socket->RdmaRead(NodeID, mem->getDataAddress(), 2 * 4096, bufferSend->size, 1); // FIX ME.
     		while (*value == 0);
     	}
-	Debug::debugItem("Copy Reply Data, size = %d.", size);
+		Debug::debugItem("Copy Reply Data, size = %d.", size);
     	memcpy((void *)send, receiveBuffer, size);
-	Debug::debugItem("Select Buffer.");
+		Debug::debugItem("Select Buffer.");
     	if (NodeID > 0 && NodeID <= ServerCount) {
 			/* Recv Message From Other Server. */
 			bufferRecv = bufferRecv - mm;
