@@ -1,7 +1,6 @@
 /*** File system class. ***/
 
 /** Version 2 + modifications for functional model. **/
-
 /** Included files. **/
 #include "filesystem.hpp"
 #include "RPCServer.hpp"
