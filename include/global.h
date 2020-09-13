@@ -21,7 +21,7 @@ static inline uint32_t gettid() {
 #define SERVER_MASSAGE_SIZE CLIENT_MESSAGE_SIZE
 #define SERVER_MASSAGE_NUM 8
 #define METADATA_SIZE (1024 * 1024 * 1024)
-#define LOCALLOGSIZE (40 * 1024 * 1024)
+#define LOCALLOGSIZE (40 * 1024 * 1024)//本地日志大小
 #define DISTRIBUTEDLOGSIZE (1024 * 1024)
 
 // #define TRANSACTION_2PC 1
@@ -66,6 +66,7 @@ typedef struct : ExtraInformation {     /* General send buffer structure. */
     Message message;                    /* Message type. */
     char path[MAX_PATH_LENGTH];         /* Path. */
 } GeneralSendBuffer;
+
 typedef struct : ExtraInformation {
 	Message message;
 	uint64_t startBlock;

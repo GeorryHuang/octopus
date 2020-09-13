@@ -8,11 +8,43 @@ typedef char* nrfsFile;
 
 #define MAX_MESSAGE_BLOCK_COUNT 10      /* Max count of block index in a message. */
 
+//ccy add start
+#define MAX_SEGMENT_COUNT_ONE_NODE 10
+#define SEGMENT_SIZE (4*1024*1024*1024)
+
+typedef struct Segment
+{
+	uint16_t segid;
+	//add sth
+};
+
+typedef struct 
+{
+	uint16_t node_id;
+	vector<Segment> segments;
+} obj_pos_info;
+
+typedef struct 
+{
+	uint16_t len;
+	obj_pos_info tuple[MAX_SEGMENT_COUNT_ONE_NODE];
+}obj_pos_tuple;
+
+typedef struct 
+{
+	uint16_t oid;
+	time_t timeLastModified;
+	uint16_t size;
+	uint16_t nodenr;
+	obj_pos_tuple pos_info;
+}ObjMeta;
+//ccy add end
+
 //文件位置三元组
 typedef struct 
 {
 	uint16_t node_id;//机器ID号
-	uint64_t offset;//相对于共享内存的offset
+	uint64_t offset;//相对于
 	uint64_t size; //操作的数据长度
 } file_pos_tuple;
 

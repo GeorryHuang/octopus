@@ -1,6 +1,5 @@
 #include "mempool.hpp"
 
-//目前只看到RPCServer在调用这个构造函数，让它传进来的mm=0,ServerCount从配置获取，DataSize=2.后续的理解和注释基于这三个入参编写
 MemoryManager::MemoryManager(uint64_t _mm, uint64_t _ServerCount,  int _DataSize)
 : ServerCount(_ServerCount), MemoryBaseAddress(_mm) {
     void *shmptr;
@@ -8,15 +7,15 @@ MemoryManager::MemoryManager(uint64_t _mm, uint64_t _ServerCount,  int _DataSize
         /* Open Shared Memory. */
         /* Add Data Storage. */
         DMFSTotalSize = (uint64_t)_DataSize;
-        DMFSTotalSize = DMFSTotalSize * 1024 * 1024 * 1024;//=2G
+        DMFSTotalSize = DMFSTotalSize * 1024 * 1024 * 1024;
         /* Add Metadata Storage. */
-        DMFSTotalSize += METADATA_SIZE;//METADATA_SIZE在global里写的是1G，此时DMFSTotalSize=3G
+        DMFSTotalSize += METADATA_SIZE;
         /* Add Client Message Pool. */
-        DMFSTotalSize += CLIENT_MESSAGE_SIZE * MAX_CLIENT_NUMBER;//CLIENT_MESSAGE_SIZE=4096,MAX_CLIENT_NUMBER=1024,这条语句过后，DMFSTotalSize=3G+4M
+        DMFSTotalSize += CLIENT_MESSAGE_SIZE * MAX_CLIENT_NUMBER;
         /* Add Server Message Pool. */
-        DMFSTotalSize += SERVER_MASSAGE_SIZE * SERVER_MASSAGE_NUM * ServerCount;//SERVER_MESSAGE_SIZE=4096,SERVER_MESSAGE_NUM=8,服务器数量是从配置里来的，这里+上的是一个32K*serverCount的大小
-        //
-        shmid = shmget(SHARE_MEMORY_KEY, DMFSTotalSize + LOCALLOGSIZE + DISTRIBUTEDLOGSIZE, IPC_CREAT);
+        DMFSTotalSize += SERVER_MASSAGE_SIZE * SERVER_MASSAGE_NUM * ServerCount;
+        shmid = shmget(SHARE_MEMORY_KEY, DMFSTotalSize + LOCALLOGSIZE + DISTRIBUTEDLOGSIZE, IPC_CREAT);//Hugepage
+        
         if (shmid == -1) {
             Debug::notifyError("shmget error");
         }
@@ -24,14 +23,14 @@ MemoryManager::MemoryManager(uint64_t _mm, uint64_t _ServerCount,  int _DataSize
         if (shmptr == (void *)(-1)) {
             Debug::notifyError("shmat error");
         }
-        MemoryBaseAddress = (uint64_t)shmptr;
+        MemoryBaseAddress = (uint64_t)shmptr;//共享内存起始地址
         memset((void *)MemoryBaseAddress, '\0', DMFSTotalSize + LOCALLOGSIZE + DISTRIBUTEDLOGSIZE);
     }
     ClientBaseAddress = MemoryBaseAddress;
     ServerSendBaseAddress = MemoryBaseAddress + CLIENT_MESSAGE_SIZE * MAX_CLIENT_NUMBER;
     ServerRecvBaseAddress = ServerSendBaseAddress + SERVER_MASSAGE_SIZE * SERVER_MASSAGE_NUM * ServerCount;
     MetadataBaseAddress = ServerRecvBaseAddress + SERVER_MASSAGE_SIZE * SERVER_MASSAGE_NUM * ServerCount;
-    DataBaseAddress = ServerRecvBaseAddress + METADATA_SIZE;
+    DataBaseAddress = ServerRecvBaseAddress + METADATA_SIZE;//MetadataBaseAddress
     LocalLogAddress = _DataSize;
     LocalLogAddress *= (1024 * 1024 * 1024);
     LocalLogAddress += DataBaseAddress;

@@ -1,43 +1,60 @@
-#include "RPCServer.hpp"
+#include "MetaServer.hpp"
 // __thread struct  timeval startt, endd;
-RPCServer::RPCServer(int _cqSize, bool isMetaServer) :cqSize(_cqSize), {
-	mm = 0;
-	UnlockWait = false;
-	mem = new MemoryManager(mm, conf->getServerCount(), 2);
-	mm = mem->getDmfsBaseAddress();//共享内存起始地址
-	Debug::notifyInfo("DmfsBaseAddress = %lx, DmfsTotalSize = %lx",
-		mem->getDmfsBaseAddress(), mem->getDmfsTotalSize());
+//ccy add start
+MetaServer::MetaServer(int _cqSize, bool isMetaServer) :cqSize(_cqSize), {
+	//ccy add start 
 	ServerCount = conf->getServerCount();
 	socket = new RdmaSocket(cqSize, mm, mem->getDmfsTotalSize(), conf, true, 0);
 	client = new RPCClient(conf, socket, mem, (uint64_t)mm);
-	tx = new TxManager(mem->getLocalLogAddress(), mem->getDistributedLogAddress());
 	socket->RdmaListen();
-	/* Constructor of file system. */
-	fs = new FileSystem((char *)mem->getMetadataBaseAddress(),
-              (char *)mem->getDataAddress(),  
-              1024 * 20,//最大文件数
-              1024 * 30,//最大目录数
-              2000,
-              conf->getServerCount(),    
-              socket->getNodeID());//最后一个参数是本server节点id号
-	fs->rootInitialize(socket->getNodeID());
-	wk = new thread[cqSize]();
+	wk = new tchread[cqSize]();
 	for (int i = 0; i < cqSize; i++)
 		wk[i] = thread(&RPCServer::Worker, this, i);
 }
-RPCServer::~RPCServer() {
-	Debug::notifyInfo("Stop RPCServer.");
+MetaServer::~MetaServer() {
+	Debug::notifyInfo("Stop MetaServer.");
 	delete conf;
 	for (int i = 0; i < cqSize; i++) {
 		wk[i].detach();
 	}
-	delete mem;
 	delete wk;
 	delete socket;
-	delete tx;
-	Debug::notifyInfo("RPCServer is closed successfully.");
+	Debug::notifyInfo("MetaServer is closed successfully.");
 }
 
+uint16_t MetaServer::Handle_Obj_Post(uint16_t size)
+{
+    if(size <= 0)
+    {
+        Debug::notifyInfo("Object size is wrong!")
+        return -1;
+    }
+    else
+    {
+        ObjMeta* metaObj = (ObjMeta*)malloc(sizeof(ObjMeta));
+        metaObj->oid = assign_global_oid();
+        for（int i = 0; i < ceil(size/SEGMENT_SIZE); i++）
+        {
+            
+            uint16_t nodeid = assign_one_node();
+            metaObj->pos_info.tuple[i].node_id = nodeid;
+            Segment* new_seg = alloc_segment_on_node(metaObj->oid, nodeid);
+            if(new_seg!=NULL)
+            {
+                metaObj->pos_info.segments.add(new_seg);
+            }
+            else
+            {
+                Debug::notifyInfo("Alloc Segment Failed!")
+                //TODO 
+            }
+            
+        }
+    }
+    
+    
+}
+//ccy add end
 RdmaSocket* RPCServer::getRdmaSocketInstance() {
 	return socket;
 }
