@@ -1401,10 +1401,10 @@ bool FileSystem::readDirectoryMeta(const char *path, DirectoryMeta *meta, uint64
 
 
 /* Fill file position information for read and write. No check on parameters. 
-   @param   size        Size to operate. 写入数据的长度
-   @param   offset      Offset to operate. 写入数据的offset
+   @param   size        Size to operate. 读取或写入数据的长度
+   @param   offset      Offset to operate. 读取或写入数据在文件中的offset
    @param   fpi         File position information. 数据的分布信息
-   @param   metaFile    File meta. */ 文件元数据
+   @param   metaFile    File meta. *//文件元数据
 /* FIXME: review logic here. */
 void FileSystem::fillFilePositionInformation(uint64_t size, uint64_t offset, file_pos_info *fpi, FileMeta *metaFile)
 {
@@ -1422,6 +1422,7 @@ void FileSystem::fillFilePositionInformation(uint64_t size, uint64_t offset, fil
     uint64_t offsetStartOfCurrentExtent = 0; /* Relative offset of start byte in current extent. */
     Debug::debugItem("Stage 9.");
     //一个FileMeta上保存了多个不同Node的数据信息，因为data会保存在多个不同的Node上
+    //for循环是为了找到offset所在的startExtent
     for (uint64_t i = 0; i < metaFile->count; i++) {
         //一开始offsetStartOfCurrentExtent是0,这里计算了每个node上的Extent的block数量，乘上BLOCK_SIZE后得到每个Extent的占用空间。如果发现了client指定的这个offset
         if ((offsetStartOfCurrentExtent + metaFile->tuple[i].countExtentBlock * BLOCK_SIZE - 1) >= offsetStart) { /* A -1 is needed to locate offset of end byte in current extent. */
@@ -1470,6 +1471,7 @@ void FileSystem::fillFilePositionInformation(uint64_t size, uint64_t offset, fil
             fpi->tuple[i].size = metaFile->tuple[boundStartExtent + i].countExtentBlock * BLOCK_SIZE; /* Assign size. */
         }
         fpi->tuple[fpi->len - 1].node_id= metaFile->tuple[boundEndExtent].hashNode; /* Assign node ID of start extent. */
+        //FIXME:为啥是0
         fpi->tuple[fpi->len - 1].offset = 0;  /* Assign offset. */
         fpi->tuple[fpi->len - 1].size = sizeInEndExtent; /* Assign size. */
         Debug::debugItem("Stage 13.");
@@ -1503,6 +1505,7 @@ bool FileSystem::extentRead(const char *path, uint64_t size, uint64_t offset, fi
             {
                 uint64_t indexFileMeta;
                 bool isDirectory;
+                //得到元数据索引
                 if (storage->hashtable->get(&hashUnique, &indexFileMeta, &isDirectory) == false) { /* If path does not exist. */
                     result = false;     /* Fail due to path does not exist. */
                 } else {
@@ -1513,6 +1516,7 @@ bool FileSystem::extentRead(const char *path, uint64_t size, uint64_t offset, fi
                     } else {
                         FileMeta metaFile;
                         Debug::debugItem("Stage 3. Get Filemeta index.");
+                        //根据元数据索引获取元数据
                         if (storage->tableFileMeta->get(indexFileMeta, &metaFile) == false) {
                             Debug::notifyError("Fail due to get file meta error.");
                             result = false; /* Fail due to get file meta error. */
@@ -1569,7 +1573,7 @@ bool FileSystem::extentReadEnd(uint64_t key, char* path)
             return true;                     /* Return. */
         } else {                        /* If remote node. */
             return false;
-        }
+        } 。
     }
 }
 
