@@ -15,13 +15,13 @@ typedef char* nrfsFile;
 typedef struct Segment
 {
 	uint16_t segid;
-	//add sth
+	//TODO:add sth
 };
 
 typedef struct 
 {
 	uint16_t node_id;
-	vector<Segment> segments;
+	vector<uint16_t> segments;
 } obj_pos_info;
 
 typedef struct 

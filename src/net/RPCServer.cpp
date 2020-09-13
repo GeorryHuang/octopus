@@ -1,6 +1,6 @@
 #include "RPCServer.hpp"
 // __thread struct  timeval startt, endd;
-RPCServer::RPCServer(int _cqSize, bool isMetaServer) :cqSize(_cqSize), {
+RPCServer::RPCServer(int _cqSize, bool isMetaServer) :cqSize(_cqSize), {	
 	mm = 0;
 	UnlockWait = false;
 	mem = new MemoryManager(mm, conf->getServerCount(), 2);

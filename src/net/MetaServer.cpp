@@ -1,15 +1,12 @@
 #include "MetaServer.hpp"
 // __thread struct  timeval startt, endd;
 //ccy add start
-MetaServer::MetaServer(int _cqSize, bool isMetaServer) :cqSize(_cqSize), {
-	//ccy add start 
-	ServerCount = conf->getServerCount();
-	socket = new RdmaSocket(cqSize, mm, mem->getDmfsTotalSize(), conf, true, 0);
+MetaServer::MetaServer(int _cqSize) :cqSize(_cqSize), {
+	
+	socket = new RdmaSocket(cqSize, 0, 0), conf, true, 0);
 	client = new RPCClient(conf, socket, mem, (uint64_t)mm);
+	//TODO:initialize MetaServer
 	socket->RdmaListen();
-	wk = new tchread[cqSize]();
-	for (int i = 0; i < cqSize; i++)
-		wk[i] = thread(&RPCServer::Worker, this, i);
 }
 MetaServer::~MetaServer() {
 	Debug::notifyInfo("Stop MetaServer.");
@@ -22,9 +19,64 @@ MetaServer::~MetaServer() {
 	Debug::notifyInfo("MetaServer is closed successfully.");
 }
 
-uint16_t MetaServer::Handle_Obj_Post(uint16_t size)
+void MetaServer::ProcessRequest(ObjectSendBuffer *send, uint16_t NodeID)
 {
-    if(size <= 0)
+	char receiveBuffer[CLIENT_MESSAGE_SIZE];
+	uint64_t bufferRecv = (uint64_t)send;
+	ObjectRecvBuffer *recv = (GeneralReceiveBuffer*)receiveBuffer;
+	recv->taskID = send->taskID;
+	recv->message = MESSAGE_RESPONSE;
+	uint64_t size = send->sizeReceiveBuffer;
+	if (send->message == MESSAGE_DISCONNECT) {
+        //rdma->disconnect(send->sourceNodeID);
+        return;
+    } else if (send->message == MESSAGE_TEST) {
+    	;
+    } else if (send->message == MESSAGE_UPDATEMETA) {
+    	/* Write unlock. */
+    	// UpdateMetaSendBuffer *bufferSend = (UpdateMetaSendBuffer *)send;
+    	// fs->unlockWriteHashItem(bufferSend->key, NodeID, bufferSend->offset);
+    	return;
+    } else if (send->message == MESSAGE_EXTENTREADEND) {
+    	/* Read unlock */
+    	// ExtentReadEndSendBuffer *bufferSend = (ExtentReadEndSendBuffer *)send;
+    	// fs->unlockReadHashItem(bufferSend->key, NodeID, bufferSend->offset);
+    	return;
+	} else {
+		ParseMessage((char*)send, receiveBuffer);
+		//TODO:
+	}
+}
+
+void MetaServer::ParseMessage(char *bufferRequest, char *bufferResponse, uint16_t NodeID)
+{
+	ObjectSendBuffer *bufferObjSend = (ObjectSendBuffer *)bufferRequest; /* Send and request. */
+    ObjectRecvBuffer *bufferObjRecv = (ObjectRecvBuffer *)bufferResponse; /* Receive and response. */
+    //bufferGeneralReceive->message = MESSAGE_RESPONSE; /* Fill response message. */
+	switch(bufferObjSend->message) {
+		case MESSAGE_POST_OBJ{
+			Handle_Obj_Post(bufferObjSend,bufferObjRecv,NodeID);
+			break;
+		}
+		case MESSAGE_GET_OBJ{
+			Handle_Obj_Get(bufferObjSend,bufferObjReceive,NodeID)
+			break;
+		}
+		case MESSAGE_PUT_OBJ{
+			Handle_Obj_Put(bufferObjSend,bufferObjReceive,NodeID);
+			break;
+		}
+		case MESSAGE_DEL_OBJ{
+			Handle_Obj_Delete(bufferObjSend,bufferObjReceive,NodeID);
+			break;
+		}
+	}
+}
+
+uint16_t MetaServer::Handle_Obj_Post(ObjectSendBuffer *send, ObjectRecvBuffer *recv, uint16_t NodeID)
+{
+	uint16_t objsize = send->sizeObj;
+    if(objsize <= 0)
     {
         Debug::notifyInfo("Object size is wrong!")
         return -1;
@@ -33,20 +85,21 @@ uint16_t MetaServer::Handle_Obj_Post(uint16_t size)
     {
         ObjMeta* metaObj = (ObjMeta*)malloc(sizeof(ObjMeta));
         metaObj->oid = assign_global_oid();
-        for（int i = 0; i < ceil(size/SEGMENT_SIZE); i++）
+        for(int i = 0; i < ceil(objsize/SEGMENT_SIZE); i++)
         {
             
-            uint16_t nodeid = assign_one_node();
-            metaObj->pos_info.tuple[i].node_id = nodeid;
-            Segment* new_seg = alloc_segment_on_node(metaObj->oid, nodeid);
+            uint16_t dsid = assign_one_node();
+			//TODO:如果dsid存在，将segid加入对应dsid的vector中
+            metaObj->pos_info.tuple[i].node_id = dsid;
+            Segment* new_seg = alloc_segment_on_node(metaObj->oid, dsid);
             if(new_seg!=NULL)
             {
-                metaObj->pos_info.segments.add(new_seg);
+                metaObj->pos_info.tuple[i].segments.add(new_seg->segid);
             }
             else
             {
                 Debug::notifyInfo("Alloc Segment Failed!")
-                //TODO 
+                
             }
             
         }

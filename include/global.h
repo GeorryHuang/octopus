@@ -28,7 +28,15 @@ static inline uint32_t gettid() {
 #define TRANSACTION_CD 1
 
 /** Enumerators and structures. **/
-typedef enum {                          /* Message enumerator. */
+typedef enum { 
+    //ccy add start
+    MESSAGE_POST_OBJ,
+    MESSAGE_GET_OBJ,
+    MESSAGE_PUT_OBJ,
+    MESSAGE_DEL_OBJ,
+    MESSAGE_ALLOC_SEG,
+    MESSAGE_RELEASE_SEG, 
+    //ccy add end                        /* Message enumerator. */
     MESSAGE_ADDMETATODIRECTORY,
     MESSAGE_REMOVEMETAFROMDIRECTORY,
     MESSAGE_MKNODWITHMETA,
@@ -61,6 +69,20 @@ typedef struct {                        /* Extra information structure. */
     uint64_t taskID;                    /* Task ID. */
     uint64_t sizeReceiveBuffer;         /* Size of receive buffer. */
 } ExtraInformation;
+
+//ccy add start
+typedef struct : ExtraInformation{
+    uint16_t oid;
+    uint64_t sizeObj;
+    Message message;
+}ObjectSendBuffer;
+
+typedef struct : ExtraInformation{
+    Message message;
+    bool result;
+    obj_pos_info opi;
+}ObjectRecvBuffer;
+//ccy add end
 
 typedef struct : ExtraInformation {     /* General send buffer structure. */
     Message message;                    /* Message type. */
