@@ -17,7 +17,14 @@
 #include "debug.hpp"                    /* Debug class. */
 #include "global.h"                     /* Global header. */
 #include "lock.h"
+#include <unordered_map>
 
+struct segment_info{
+    uint16_t seg_id;
+    unsigned char name[256];
+};
+
+unordered_map<uint16_t, segment_info> segment_map;
 /** Classes. **/
 class FileSystem
 {
@@ -72,6 +79,11 @@ public:
     uint64_t lockReadHashItem(NodeHash hashNode, AddressHash hashAddressIndex); /* Lock hash item for read. */
     void unlockReadHashItem(uint64_t key, NodeHash hashNode, AddressHash hashAddressIndex); /* Unlock hash item. */
     void updateRemoteMeta(uint16_t parentNodeID, DirectoryMeta *meta, uint64_t parentMetaAddress, uint64_t parentHashAddress);
+    //ccy add start
+    bool alloc_segment(uint16_t seg_id);
+    bool read_segment(uint16_t seg_id);
+    bool write_segment(uint16_t seg_id, char *buffer);
+    //ccy add end
     FileSystem(char *buffer, char *bufferBlock, uint64_t countFile, /* Constructor of file system. */
                uint64_t countDirectory, uint64_t countBlock, 
                uint64_t countNode, NodeHash hashLocalNode); 

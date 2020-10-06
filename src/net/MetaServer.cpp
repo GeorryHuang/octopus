@@ -18,6 +18,95 @@ MetaServer::~MetaServer() {
 	delete socket;
 	Debug::notifyInfo("MetaServer is closed successfully.");
 }
+void MetaServer::add_onvm_object(struct ms_onvm_object *obj)
+{
+	object_map[obj->oid] = obj;
+}
+
+ms_onvm_object *MetaServer::find_onvm_object(uint16_t oid)
+{
+	ms_onvm_object *obj = object_map.find(oid);
+	if(obj == NULL){
+		Debug::notifyInfo("this object is not found!");
+		return NULL;
+	}
+	return obj;
+}
+
+ms_onvm_object *MetaServer::alloc_onvm_object(unsigned char *s, uint16_t size)
+{
+	struct onvm_object *obj;
+	obj = malloc(sizeof(*obj));
+	if(obj){
+		memset(obj, 0, sizeof(*obj));
+		memcpy(obj->name, s, MAX_OBJ_NAME_LENGTH);
+		//INIT_LIST_HEAD(&obj->next); 对比hotpot, 这个list有存在的必要吗？
+	}
+	return obj;
+}
+uint16_t MetaServer::assign_global_seg_id()
+{
+	return SEG_NO_COUNTER++;
+}
+
+uint16_t MetaServer::assign_global_oid()
+{
+	return OBJ_NO_COUNTER++;
+}
+
+uint16_t MetaServer::assgin_one_node()
+{
+
+};
+
+ms_segment_info *MetaServer::get_segment_info(uint16_t oid)
+{
+	ms_onvm_object *obj = object_map.find(oid);
+	if(obj == NULL){
+		Debug::notifyInfo("this object is not found!");
+		return NULL;
+	}
+	return obj->pos_info;
+}
+
+int MetaServer::init_new_onvm_object(struct ms_onvm_object *obj)
+{
+	int index,  nr_established = 0;
+	uint16_t seg_id, node_id, oid;
+
+	for(index = 0; index < ceil(obj->size/SEGMENT_SIZE); index++){
+		node_id = assgin_one_node();
+		seg_id = assign_global_seg_id();
+		oid = assign_global_oid();
+		obj->oid = oid;
+		if(!establish_node(obj, index, node_id, seg_id))
+			nr_established++;
+	}
+}
+
+int MetaServer::establish_node(struct ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id)
+{
+	struct onvm_request request;
+	struct onvm_reply   reply;
+	struct ms_segment_info *s;
+	unsigned int size;
+
+	request.message = MESSAGE_ALLOC_SEG_AT_DS;
+	request.seg_id = seg_id;
+	//size = sizeof(request.message) + sizeof(request.seg_id);
+	//TODO:send alloc segment request to DS
+	//TODO:socket->RdmaSend();
+	if(reply.status != ONVM_REPLY_SUCCESS){
+		Debug::notifyError("Alloc segment failed!");
+		return -1;
+	}
+	s = &(obj->pos_info[index]);
+	s->seg_id = seg_id;
+	s->node_id = node_id;
+
+	return 0;
+}
+
 
 void MetaServer::ProcessRequest(ObjectSendBuffer *send, uint16_t NodeID)
 {
@@ -50,6 +139,9 @@ void MetaServer::ProcessRequest(ObjectSendBuffer *send, uint16_t NodeID)
 
 void MetaServer::ParseMessage(char *bufferRequest, char *bufferResponse, uint16_t NodeID)
 {
+	ObjectSendBuffer *bufferObjSend;
+	ObjectRecvBuffer *bufferObjRecv;
+	
 	ObjectSendBuffer *bufferObjSend = (ObjectSendBuffer *)bufferRequest; /* Send and request. */
     ObjectRecvBuffer *bufferObjRecv = (ObjectRecvBuffer *)bufferResponse; /* Receive and response. */
     //bufferGeneralReceive->message = MESSAGE_RESPONSE; /* Fill response message. */
@@ -61,7 +153,7 @@ void MetaServer::ParseMessage(char *bufferRequest, char *bufferResponse, uint16_
 		case MESSAGE_GET_OBJ{
 			Handle_Obj_Get(bufferObjSend,bufferObjReceive,NodeID)
 			break;
-		}
+		}c
 		case MESSAGE_PUT_OBJ{
 			Handle_Obj_Put(bufferObjSend,bufferObjReceive,NodeID);
 			break;
@@ -73,56 +165,67 @@ void MetaServer::ParseMessage(char *bufferRequest, char *bufferResponse, uint16_
 	}
 }
 
-uint16_t MetaServer::Handle_Obj_Post(ObjectSendBuffer *send, ObjectRecvBuffer *recv, uint16_t NodeID)
+int MetaServer::Handle_Obj_Post(char *input, char *recv, uint16_t NodeID)
 {
-	uint16_t objsize = send->sizeObj;
-    if(objsize <= 0)
+	int idx, nr_seg = 0;
+	unsigned char *s;
+	uint16_t size;
+	struct segment_info *segment;
+	struct ms_onvm_object *obj;
+	struct onvm_request_post_obj *request;
+	struct onvm_relpy *reply；
+
+	request = (struct onvm_request_post_obj *)input;
+	reply =(struct onvm_relpy *) output;
+	
+	s = request->name;
+	size = request->size;
+	obj = find_object(s);
+    if(!obj)
     {
-        Debug::notifyInfo("Object size is wrong!")
-        return -1;
-    }
-    else
-    {
-        ObjMeta* metaObj = (ObjMeta*)malloc(sizeof(ObjMeta));
-        metaObj->oid = assign_global_oid();
-        for(int i = 0; i < ceil(objsize/SEGMENT_SIZE); i++)
+		if(objsize <= 0)
         {
-            
-            uint16_t dsid = assign_one_node();
-			//TODO:如果dsid存在，将segid加入对应dsid的vector中
-            metaObj->pos_info.tuple[i].node_id = dsid;
-            Segment* new_seg = alloc_segment_on_node(metaObj->oid, dsid);
-            if(new_seg!=NULL)
-            {
-                metaObj->pos_info.tuple[i].segments.add(new_seg->segid);
-            }
-            else
-            {
-                Debug::notifyInfo("Alloc Segment Failed!")
-                
-            }
-            
-        }
+			Debug::notifyInfo("POST OP Failed!")obj
+        	return -1;
+		}
+    	obj = alloc_onvm_object(s, size);
+		if(!obj)
+		{
+			reply->status = ONVM_POST_OBJ_FAIL;
+			//*reply_len = sizeof(unsigned int);
+			goto out;
+		}
+    	init_new_onvm_object(obj);
+		add_onvm_object(obj);       
     }
-    
-    
+	segment = &reply->base[0];
+	for(idx = 0; idx < MAX_SEGMENT_COUNT; idx++){
+		segment->seg_id = obj->pos_info[idx].seg_id;
+		segment->node_id = obj->pos_info[idx].node_id;
+		segment++;
+		nr_seg++;
+	}
+
+}
+
+ms_segment_info* MetaServer::Handle_OBJ_GET(uint16_t oid, char *intput, char *output)
+{
+	ms_segment_info *seg_info = get_segment_info(oid);
+	//TODO:send segmentinfo to client
+}
+
+ms_segment_info* MetaServer::Handle_OBJ_PUT(uint16_t oid, char *intput, char *output)
+{
+	ms_segment_info *seg_info = get_segment_info(oid);
+	//TODO:send segmentinfo to client
+}
+
+ms_segment_info *MetaServer::Handle_Obj_Delete(uint16_t oid, char *input, char *output)
+{
+	ms_segment_info *seg_info = get_segment_info(oid);
+	//TODO:send segmentinfo to client
 }
 //ccy add end
-RdmaSocket* RPCServer::getRdmaSocketInstance() {
-	return socket;
-}
-
-MemoryManager* RPCServer::getMemoryManagerInstance() {
-	return mem;
-}
-
-RPCClient* RPCServer::getRPCClientInstance() {
-	return client;
-}
-
-TxManager* RPCServer::getTxManagerInstance() {
-	return tx;
-}
 
 void RPCServer::Worker(int id) {
 	uint32_t tid = gettid();
@@ -284,63 +387,3 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
     }
 }
 
-int RPCServer::getIDbyTID() {
-	uint32_t tid = gettid();
-	return th2id[tid];
-}
-uint64_t RPCServer::ContractReceiveBuffer(GeneralSendBuffer *send, GeneralReceiveBuffer *recv) {
-	uint64_t length;
-	switch (send->message) {
-		case MESSAGE_GETATTR: {
-			GetAttributeReceiveBuffer *bufferRecv = 
-			(GetAttributeReceiveBuffer *)recv;
-			if (bufferRecv->attribute.count >= 0 && bufferRecv->attribute.count < MAX_FILE_EXTENT_COUNT)
-				length = (MAX_FILE_EXTENT_COUNT - bufferRecv->attribute.count) * sizeof(FileMetaTuple);
-			else 
-				length = sizeof(FileMetaTuple) * MAX_FILE_EXTENT_COUNT;
-			break;
-		}
-		case MESSAGE_READDIR: {
-			ReadDirectoryReceiveBuffer *bufferRecv = 
-			(ReadDirectoryReceiveBuffer *)recv;
-			if (bufferRecv->list.count >= 0 && bufferRecv->list.count <= MAX_DIRECTORY_COUNT)
-				length = (MAX_DIRECTORY_COUNT - bufferRecv->list.count) * sizeof(DirectoryMetaTuple);
-			else 
-				length = MAX_DIRECTORY_COUNT * sizeof(DirectoryMetaTuple);
-			break;
-		}
-		case MESSAGE_EXTENTREAD: {
-			ExtentReadReceiveBuffer *bufferRecv = 
-			(ExtentReadReceiveBuffer *)recv;
-			if (bufferRecv->fpi.len >= 0 && bufferRecv->fpi.len <= MAX_MESSAGE_BLOCK_COUNT)
-				length = (MAX_MESSAGE_BLOCK_COUNT - bufferRecv->fpi.len) * sizeof(file_pos_tuple);
-			else 
-				length = MAX_MESSAGE_BLOCK_COUNT * sizeof(file_pos_tuple);
-			break;
-		}
-		case MESSAGE_EXTENTWRITE: {
-			ExtentWriteReceiveBuffer *bufferRecv = 
-			(ExtentWriteReceiveBuffer *)recv;
-			if (bufferRecv->fpi.len >= 0 && bufferRecv->fpi.len <= MAX_MESSAGE_BLOCK_COUNT)
-				length = (MAX_MESSAGE_BLOCK_COUNT - bufferRecv->fpi.len) * sizeof(file_pos_tuple);
-			else 
-				length = MAX_MESSAGE_BLOCK_COUNT * sizeof(file_pos_tuple);
-			break;
-		}
-		case MESSAGE_READDIRECTORYMETA: {
-			ReadDirectoryMetaReceiveBuffer *bufferRecv = 
-			(ReadDirectoryMetaReceiveBuffer *)recv;
-			if (bufferRecv->meta.count >= 0 && bufferRecv->meta.count <= MAX_DIRECTORY_COUNT)
-				length = (MAX_DIRECTORY_COUNT - bufferRecv->meta.count) * sizeof(DirectoryMetaTuple);
-			else 
-				length = MAX_DIRECTORY_COUNT * sizeof(DirectoryMetaTuple);
-			break;
-		}
-		default: {
-			length = 0;
-			break;
-		}
-	}	
-	// printf("contract length = %d", (int)length);
-	return length;
-}

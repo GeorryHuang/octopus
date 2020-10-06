@@ -34,8 +34,7 @@ typedef enum {
     MESSAGE_GET_OBJ,
     MESSAGE_PUT_OBJ,
     MESSAGE_DEL_OBJ,
-    MESSAGE_ALLOC_SEG,
-    MESSAGE_RELEASE_SEG, 
+    MESSAGE_ALLOC_SEG_AT_DS,
     //ccy add end                        /* Message enumerator. */
     MESSAGE_ADDMETATODIRECTORY,
     MESSAGE_REMOVEMETAFROMDIRECTORY,
@@ -64,25 +63,19 @@ typedef enum {
     MESSAGE_INVALID
 } Message;
 
+//ccy add start 
+typedef enum{
+    ONVM_POST_OBJ_FAIL,
+    ONVM_REPLY_SUCCESS,
+} ONVM_REPLY_STATUS;
+//ccy add end
+
 typedef struct {                        /* Extra information structure. */
     uint16_t sourceNodeID;              /* Source node ID. */
     uint64_t taskID;                    /* Task ID. */
     uint64_t sizeReceiveBuffer;         /* Size of receive buffer. */
 } ExtraInformation;
 
-//ccy add start
-typedef struct : ExtraInformation{
-    uint16_t oid;
-    uint64_t sizeObj;
-    Message message;
-}ObjectSendBuffer;
-
-typedef struct : ExtraInformation{
-    Message message;
-    bool result;
-    obj_pos_info opi;
-}ObjectRecvBuffer;
-//ccy add end
 
 typedef struct : ExtraInformation {     /* General send buffer structure. */
     Message message;                    /* Message type. */

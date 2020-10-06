@@ -404,6 +404,12 @@ void FileSystem::parseMessage(char *bufferRequest, char *bufferResponse)
             unlockReadHashItem(bufferReceive->key, (NodeHash)bufferSend->sourceNodeID, (AddressHash)(bufferReceive->offset));
             break;
         }
+        //ccy add start 
+        case MESSAGE_ALLOC_SEG_AT_DS:
+        {
+
+        }
+        //ccy add end
         default:
             break;
     }
@@ -2344,6 +2350,49 @@ bool FileSystem::rename(const char *pathOld, const char *pathNew)
         }
     }
 }
+
+//ccy add start 
+bool FileSystem::alloc_segment(uint16_t seg_id)
+{
+    uint16_t seg_id = seg_id;
+    int ret;
+    //NOVA open a segment 
+    struct segment_info *seg;
+    seg->seg_id = seg_id;
+    seg->name = (unsigned char) seg_id;
+    ret = open("seg->name",O_CREAT)；
+    if(ret < 0){
+        Debug::notifyError("alloc segment failed!");
+        return false;
+    }
+    segment_map.insert(pair<uint16_t, struct segment_info*> (seg_id, seg));
+    return true;
+}
+//TODO:将读取到的数据内容返回上层，最终返回给client
+bool FileSystem::read_segment(uint16_t seg_id)
+{
+    segment_info *seg = segment_map.find(seg_id);
+    if(seg == NULL){
+        Debug::notifyInfo("this segment is not found!");
+        return false;
+    }
+    //TODO:memcpy 数据到 buffer中
+    return true;
+}
+
+bool FileSystem::write_segment(uint16_t seg_id, char *buffer)
+{
+     segment_info *seg = segment_map.find(seg_id);
+     if(seg == NULL ){
+         Debug::notifyInfo("this segment is not found!");
+         return false;
+     }
+     //TODO:将要写入的数据写到对应的segment中
+     
+     return true;
+}
+//ccy add end
+
 
 /* Initialize root directory. 
    @param   LocalNode     Local Node ID.
