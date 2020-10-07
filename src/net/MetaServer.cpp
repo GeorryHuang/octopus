@@ -108,8 +108,41 @@ int MetaServer::establish_node(struct ms_onvm_object *obj, int index; uint16_t n
 }
 
 
-void MetaServer::ProcessRequest(ObjectSendBuffer *send, uint16_t NodeID)
+void MetaServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID)
 {
+	char receiveBuffer[CLIENT_MESSAGE_SIZE];
+	uint64_t bufferRecv = (uint64_t)send;
+	GeneralReceiveBuffer *recv = (GeneralReceiveBuffer*)receiveBuffer;
+	recv->taskID = send->taskID;
+	recv->message = MESSAGE_RESPONSE;
+	uint64_t size = send->sizeReceiveBuffer;
+
+	switch (send->message)
+	{
+	case MESSAGE_POST_OBJ:
+		/* code */
+		break;
+	case MESSAGE_GET_OBJ:
+		break;
+	case MESSAGE_PUT_OBJ:
+		break;
+	case MESSAGE_DEL_OBJ:
+	
+		break;
+	case MESSAGE_ALLOC_SEG_AT_DS：
+		break;
+	default:
+		break;
+	}
+
+
+	if (send->message == MESSAGE_DISCONNECT) {
+        //rdma->disconnect(send->sourceNodeID);
+        return;
+    }
+
+
+
 	char receiveBuffer[CLIENT_MESSAGE_SIZE];
 	uint64_t bufferRecv = (uint64_t)send;
 	ObjectRecvBuffer *recv = (GeneralReceiveBuffer*)receiveBuffer;

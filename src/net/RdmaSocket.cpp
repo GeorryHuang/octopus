@@ -7,6 +7,7 @@
 #include "RdmaSocket.hpp"
 using namespace std;
 
+
 RdmaSocket::RdmaSocket(int _cqNum, uint64_t _mm, uint64_t _mmSize, Configuration* _conf, bool _isServer, uint8_t _Mode) :
 DeviceName(NULL), Port(1), ServerPort(5678), GidIndex(0), 
 isRunning(true), isServer(_isServer), cqNum(_cqNum), cqPtr(0), 
@@ -68,6 +69,15 @@ void RdmaSocket::NotifyPerformance() {
     }
 }
 
+/**
+ * 1. 获取可用的infiniband设备列表
+ * 2. DeviceName成员变量判断找到的设备
+ * 3. 获取指定ib设备的handle
+ * 4. 根据成员变量中的cqNum为指定的ib设备创建对应的CQ
+ * 5. 创建PD
+ * 6. 根据成员变量mm和mmSize注册给ib作为MR
+ * 
+ * */
 bool RdmaSocket::CreateResources() {
 	/* Open device, create PD */
 	struct ibv_device **DeviceList = NULL;
@@ -201,11 +211,27 @@ bool RdmaSocket::CreateResources() {
     return true;
 }
 
+
+/**
+ * peer：传入的PeerSockData指针
+ * offset: peer中有一个qp数组，offset是数组下标，意为在哪个下标处创建QP
+ * 
+ * 
+ * 1. 创建QueuePair结构体置0
+ * 2. 根据当前进程通讯属于server-server，server-client，还是client来进行参数调整
+ * 3. 构造一个QP，然后放入PeerSockData的第offset个QP中。
+ * 
+ * 
+ * 
+*/
 bool RdmaSocket::CreateQueuePair(PeerSockData *peer, int offset) {
 
+    //给qp空间置0
 	struct ibv_qp_init_attr attr;
 	memset(&attr, 0, sizeof(attr));
 
+
+    //TODO:这是什么?RC和UC？先不管？
 	if(Mode == 0) {
         attr.qp_type = IBV_QPT_RC;
     } else if (Mode == 1) {
@@ -213,24 +239,29 @@ bool RdmaSocket::CreateQueuePair(PeerSockData *peer, int offset) {
     }
     attr.sq_sig_all = 0;
 
+    //如果本地是server，且peerId也是server的话，
     if (isServer && peer->NodeID > 0 && peer->NodeID <= ServerCount) {
-        /* Server interconnect, use cq at 0. */
+        /*本地有一个环形cq数组，这里在配置新建QP使用的CQ*/
+        /*server内部连接，使用第0个cq*/
         attr.send_cq = cq[0];
         attr.recv_cq = cq[0];
         peer->cq = cq[0];
     } else if (isServer) {
-        /* Connection between server and client. */
-	if (offset == 0) {
- 		/* Each client will create two qps, we use same cq at server side. */
-		cqPtr += 1;
-		if (cqPtr >= cqNum)
-			cqPtr = 1;
-	}
-        attr.send_cq = cq[cqPtr];
-        attr.recv_cq = cq[cqPtr];
-        peer->cq = cq[cqPtr];
-    } else if (!isServer) {
-        /* Client only have one CQ, so never change. */
+        /* 当前是server，对端是client */
+
+        /*如果offset为0,cqPtr环形自增*/
+	    if (offset == 0) {
+ 	    	/* Each client will create two qps, we use same cq at server side. */
+	    	cqPtr += 1;
+	    	if (cqPtr >= cqNum)
+	    		cqPtr = 1;
+	    }
+        /*使用第cqPtr个completion queue*/
+            attr.send_cq = cq[cqPtr];
+            attr.recv_cq = cq[cqPtr];
+            peer->cq = cq[cqPtr];
+     } else if (!isServer) {
+        /* 如果当前是client，使用第cqPtr个cq，然后cqPtr环形自增 */
         attr.send_cq = cq[cqPtr];
         attr.recv_cq = cq[cqPtr];
         peer->cq = cq[cqPtr];
@@ -254,6 +285,12 @@ bool RdmaSocket::CreateQueuePair(PeerSockData *peer, int offset) {
     return true;
 }
 
+/**
+ * 
+ * 这是在重置QP，具体没有深究
+ * 
+ * 
+*/
 bool RdmaSocket::ModifyQPtoInit(struct ibv_qp *qp) {
     if (qp == NULL) {
         Debug::notifyError("Bad QP, Return");
@@ -279,6 +316,10 @@ bool RdmaSocket::ModifyQPtoInit(struct ibv_qp *qp) {
     return true;
 }
 
+/**
+ * Reliable to Reliable
+ * 
+*/
 bool RdmaSocket::ModifyQPtoRTR(struct ibv_qp *qp, uint32_t remote_qpn, uint16_t dlid, uint8_t *dgid) {
     struct ibv_qp_attr attr;
     int flags;

@@ -10,7 +10,7 @@ RPCServer::RPCServer(int _cqSize, bool isMetaServer) :cqSize(_cqSize), {
 	ServerCount = conf->getServerCount();
 	socket = new RdmaSocket(cqSize, mm, mem->getDmfsTotalSize(), conf, true, 0);
 	client = new RPCClient(conf, socket, mem, (uint64_t)mm);
-	tx = new TxManager(mem->getLocalLogAddress(), mem->getDistributedLogAddress());
+	// tx = new TxManager(mem->getLocalLogAddress(), mem->getDistributedLogAddress());
 	socket->RdmaListen();
 	/* Constructor of file system. */
 	fs = new FileSystem((char *)mem->getMetadataBaseAddress(),
@@ -34,7 +34,7 @@ RPCServer::~RPCServer() {
 	delete mem;
 	delete wk;
 	delete socket;
-	delete tx;
+	// delete tx;
 	Debug::notifyInfo("RPCServer is closed successfully.");
 }
 
@@ -70,8 +70,10 @@ void RPCServer::RequestPoller(int id) {
 	uint16_t NodeID;
 	uint16_t offset;
 	int ret = 0, count = 0;
+	//远端的接收缓冲区，就是远端发送信息。
 	uint64_t bufferRecv;
 	// unsigned long diff;
+	//获取一个wc(Work completion)，就是rdma work的完成信息
 	ret = socket->PollOnce(id, 1, wc);
 	if (ret <= 0) {
 		/*gettimeofday(&endd, NULL);
@@ -87,7 +89,7 @@ void RPCServer::RequestPoller(int id) {
 			Debug::debugItem("Path = %s, size = %x, offset = %x", send->path, send->size, send->offset);
 		}*/
 		return;
-	} else if (wc[0].opcode == IBV_WC_RECV_RDMA_WITH_IMM) {
+	} else if (wc[0].opcode == IBV_WC_RECV_RDMA_WITH_IMM) {//这里只处理IBV_WC_RECV_RDMA_WITH_IMM，如果是其他的opcode，就会忽略掉
 		NodeID = wc[0].imm_data >> 20;
 		if (NodeID == 0XFFF) {
 			/* Unlock request, process it directly. */
@@ -99,6 +101,7 @@ void RPCServer::RequestPoller(int id) {
 		offset = (uint16_t)(wc[0].imm_data >> 16);
 		Debug::debugItem("NodeID = %d, offset = %d", NodeID, offset);
 		count += 1;
+		//根据NodeId，来判断发送信息的是server还是client
 		if (NodeID > 0 && NodeID <= ServerCount) {
 			/* Recv Message From Other Server. */
 			bufferRecv = mem->getServerRecvAddress(NodeID, offset);
@@ -155,7 +158,15 @@ void RPCServer::ProcessQueueRequest() {
 	// printf("2\n");
 }
 
-void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_t offset) {
+/*
+ *
+ * send: 远端发送信息
+ * NodeId：远端的id
+ * offset：远端发送的offset信息
+ * 
+ */
+void RPCServer::ProcessRequest(GeneralSendBuffer * send, uint16_t NodeID, uint16_t offset) {
+	//receiveBuffer是回传给发送端的信息体
 	char receiveBuffer[CLIENT_MESSAGE_SIZE];
 	uint64_t bufferRecv = (uint64_t)send;
 	GeneralReceiveBuffer *recv = (GeneralReceiveBuffer*)receiveBuffer;
@@ -181,6 +192,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
     	fs->parseMessage((char*)send, receiveBuffer);
     	// fs->recursivereaddir("/", 0);
 		Debug::debugItem("Contract Receive Buffer, size = %d.", size);
+		// 这里是计算recv消息的长度
 		size -= ContractReceiveBuffer(send, recv);
     	if (send->message == MESSAGE_RAWREAD) {
     		ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
@@ -197,6 +209,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
     		while (*value == 0);
     	}
 		Debug::debugItem("Copy Reply Data, size = %d.", size);
+		//将返回给发送端的消息体拷贝给send。
     	memcpy((void *)send, receiveBuffer, size);
 		Debug::debugItem("Select Buffer.");
     	if (NodeID > 0 && NodeID <= ServerCount) {
@@ -207,8 +220,10 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 			bufferRecv = 0;
 		} 
 		Debug::debugItem("send = %lx, recv = %lx", send, bufferRecv);
+		//返回消息体给发送端。
     		socket->_RdmaBatchWrite(NodeID, (uint64_t)send, bufferRecv, size, 0, 1);
 		// socket->_RdmaBatchReceive(NodeID, mm, 0, 2);
+		//为什么这里会有receive
 		socket->RdmaReceive(NodeID, mm + NodeID * 4096, 0);
 		// printf("process end\n");
     }
