@@ -209,7 +209,22 @@ void RPCServer::ProcessQueueRequest() {
 }
 
 /*
- *
+ * 1.在MemoryManager内的内存：
+ * GeneralSendBuffer * send = |AAAAAAAAAAAAAAAAAAA|
+ * 
+ * 2.在函数栈内的内存:
+ * char receiveBuffer[4096] = |BBBBBBBBB|
+ * 
+ * 3. 解析|AAAAAAAAAAAAAAAAAAA|中的MESSAGE_TYPE和内容，做出响应处理，并把response RPC构造|BBBBBBBBBB|
+ * 
+ * 4. 将|BBBBBB|覆盖到|AAAAAAAAAAAAAA|中，此时GeneralSendBuffer * send = |BBBBBBBBAAAAAAAAA|
+ * 
+ * 5. 计算|BBBBB|AAAAAAAAAAAAAAAAAAAA|中的无效部分，得到正确的size
+ *       | size|ContractReceiveBuffer| 
+ * 
+ * 6. 将send指向的|BBBBBAAAAAAAAAA|部分的BBBBB发送回去
+ * 
+ * 
  * send: RPCServer从远端接收到消息的buffer起始地址
  * NodeId：远端的id
  * offset：远端发送的offset信息
@@ -243,7 +258,8 @@ void RPCServer::ProcessRequest(GeneralSendBuffer * send, uint16_t NodeID, uint16
     	fs->parseMessage((char*)send, receiveBuffer);
     	// fs->recursivereaddir("/", 0);
 		Debug::debugItem("Contract Receive Buffer, size = %d.", size);
-		// 这里是计算recv消息的长度
+		/* 这个函数会返回一个i64,紧接着size会减掉这个值，从推断上来看，因为一开始size来自的是send->sizeReceiveBuffer。所以可以
+		断定，是recv这个buffer填好内容后，跟原来的send相比，有一部分是不需要 */
 		size -= ContractReceiveBuffer(send, recv);
     	if (send->message == MESSAGE_RAWREAD) {
     		ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
@@ -274,7 +290,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer * send, uint16_t NodeID, uint16
 		//返回消息体给发送端。
     		socket->_RdmaBatchWrite(NodeID, (uint64_t)send, bufferRecv, size, 0, 1);
 		// socket->_RdmaBatchReceive(NodeID, mm, 0, 2);
-		//为什么这里会有receive
+		//为什么这里会有receive，从接收长度为0来看，应该是进行一次ack？再发送response后，进行一次长度为0的挥手？
 		socket->RdmaReceive(NodeID, mm + NodeID * 4096, 0);
 		// printf("process end\n");
     }
@@ -284,6 +300,14 @@ int RPCServer::getIDbyTID() {
 	uint32_t tid = gettid();
 	return th2id[tid];
 }
+
+
+/**
+ 
+ * 
+ * 
+ * 
+*/
 uint64_t RPCServer::ContractReceiveBuffer(GeneralSendBuffer *send, GeneralReceiveBuffer *recv) {
 	uint64_t length;
 	switch (send->message) {

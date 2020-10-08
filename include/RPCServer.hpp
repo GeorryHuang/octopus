@@ -28,7 +28,7 @@ private:
 	RdmaSocket *socket;
 	MemoryManager *mem;
 	uint64_t mm;
-	// TxManager *tx;
+	TxManager *tx;
 	RPCClient *client;
 	int ServerCount;
 	FileSystem *fs;
@@ -51,7 +51,7 @@ public:
 	RdmaSocket* getRdmaSocketInstance();
 	MemoryManager* getMemoryManagerInstance();
 	RPCClient* getRPCClientInstance();
-	// TxManager* getTxManagerInstance();
+	TxManager* getTxManagerInstance();
 	uint64_t ContractReceiveBuffer(GeneralSendBuffer *send, GeneralReceiveBuffer *recv);
 	void RequestPoller(int id);
 	int getIDbyTID();
