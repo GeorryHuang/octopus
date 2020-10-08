@@ -10,7 +10,7 @@ RPCServer::RPCServer(int _cqSize, bool isMetaServer) :cqSize(_cqSize), {
 	ServerCount = conf->getServerCount();
 	socket = new RdmaSocket(cqSize, mm, mem->getDmfsTotalSize(), conf, true, 0);
 	client = new RPCClient(conf, socket, mem, (uint64_t)mm);
-	// tx = new TxManager(mem->getLocalLogAddress(), mem->getDistributedLogAddress());
+	tx = new TxManager(mem->getLocalLogAddress(), mem->getDistributedLogAddress());
 	socket->RdmaListen();
 	/* Constructor of file system. */
 	fs = new FileSystem((char *)mem->getMetadataBaseAddress(),
@@ -34,7 +34,7 @@ RPCServer::~RPCServer() {
 	delete mem;
 	delete wk;
 	delete socket;
-	// delete tx;
+	delete tx;
 	Debug::notifyInfo("RPCServer is closed successfully.");
 }
 
