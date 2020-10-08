@@ -54,27 +54,88 @@ TxManager* RPCServer::getTxManagerInstance() {
 	return tx;
 }
 
+/**
+ * RPCServer启动后，创建多个线程，每个线程运行一个worker
+ * id: 线程的编号，0～n
+ * 
+*/
 void RPCServer::Worker(int id) {
 	uint32_t tid = gettid();
 	// gettimeofday(&startt, NULL);
 	Debug::notifyInfo("Worker %d, tid = %d", id, tid);
 	th2id[tid] = id;
+	//除了RPCServer之外，MemoryManager也维护了一个tid到id的映射关系map
 	mem->setID(id);
 	while (true) {
 		RequestPoller(id);
 	}
 }
 
+
+/**
+ * 判断一个ibv_wc是不是一个Unlock Request，如果是，处理对应逻辑并返回true，否则返回false
+ * （这个函数截取自作者原来的RequestPoller片段,目前看来他自己注释掉了处理逻辑，只剩下一个壳）
+ * Author：Huang Zhuoyue
+*/
+bool RPCServer::unlockRequest(struct ibv_wc *wc){
+	NodeID = wc.imm_data >> 20;
+		if (NodeID == 0XFFF) {
+			/* Unlock request, process it directly. */
+			// uint64_t hashAddress = wc[0].imm_data & 0x000FFFFF;
+			// fs->unlockWriteHashItem(0, 0, hashAddress);
+			return true;
+		}
+	return false;
+}
+
+
+
+/**
+ * 根据wc，取出接收缓冲区的地址（因为需要判断是client发送）
+ * 
+ * 
+ * 
+*/
+uint64_t getBufferRecvAddress(struct ibv_wc *wc){
+		NodeID = (uint16_t)(wc.imm_data << 16 >> 16);
+		offset = (uint16_t)(wc.imm_data >> 16);
+		Debug::debugItem("NodeID = %d, offset = %d", NodeID, offset);
+		//这个count并未发现使用的地方，是作者留下的，先注释了
+		// count += 1;
+		//根据NodeId，来判断发送信息的是server还是client
+		if (NodeID > 0 && NodeID <= ServerCount) {
+			/* Recv Message From Other Server. */
+			return mem->getServerRecvAddress(NodeID, offset);
+		} else if (NodeID > ServerCount) {
+			/* Recv Message From Client. */
+			return mem->getClientMessageAddress(NodeID);
+		}
+		//作者并没有处理NodeId的else。
+		return 0;
+}
+
+
+
+
+/**
+ * 每一个RDMA监听线程都会持续运行的方法
+ * 
+ * 
+*/
 void RPCServer::RequestPoller(int id) {
 	struct ibv_wc wc[1];
 	uint16_t NodeID;
 	uint16_t offset;
-	int ret = 0, count = 0;
+	
+	int ret = 0
+	//这个count并未发现使用的地方，是作者留下的，先注释了
+	// int count = 0;
 	//远端的接收缓冲区，就是远端发送信息。
-	uint64_t bufferRecv;
+	uint64_t bufferRecvAddress;
 	// unsigned long diff;
 	//获取一个wc(Work completion)，就是rdma work的完成信息
 	ret = socket->PollOnce(id, 1, wc);
+	//如果是0,说明有异常
 	if (ret <= 0) {
 		/*gettimeofday(&endd, NULL);
 		diff = 1000000 * (endd.tv_sec - startt.tv_sec) + endd.tv_usec - startt.tv_usec;
@@ -90,26 +151,15 @@ void RPCServer::RequestPoller(int id) {
 		}*/
 		return;
 	} else if (wc[0].opcode == IBV_WC_RECV_RDMA_WITH_IMM) {//这里只处理IBV_WC_RECV_RDMA_WITH_IMM，如果是其他的opcode，就会忽略掉
-		NodeID = wc[0].imm_data >> 20;
-		if (NodeID == 0XFFF) {
-			/* Unlock request, process it directly. */
-			// uint64_t hashAddress = wc[0].imm_data & 0x000FFFFF;
-			// fs->unlockWriteHashItem(0, 0, hashAddress);
+		//如果是unlockRequest，直接处理完毕
+		if(unlockRequest(wc[0])){
 			return;
 		}
-		NodeID = (uint16_t)(wc[0].imm_data << 16 >> 16);
-		offset = (uint16_t)(wc[0].imm_data >> 16);
-		Debug::debugItem("NodeID = %d, offset = %d", NodeID, offset);
-		count += 1;
-		//根据NodeId，来判断发送信息的是server还是client
-		if (NodeID > 0 && NodeID <= ServerCount) {
-			/* Recv Message From Other Server. */
-			bufferRecv = mem->getServerRecvAddress(NodeID, offset);
-		} else if (NodeID > ServerCount) {
-			/* Recv Message From Client. */
-			bufferRecv = mem->getClientMessageAddress(NodeID);
-		}
-		GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
+
+		//得到wc发送完成后的缓冲区64位地址
+		bufferRecvAddress = getBufferRecvAddress(wc[0]);
+		//照目前逻辑来看，这里是为了复用内存，所以在接收完数据后，直接将接收的缓冲内存当作发送buffer使用。
+		GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecvAddress;
 		switch (send->message) {
 			case MESSAGE_TEST: {
 
@@ -160,13 +210,13 @@ void RPCServer::ProcessQueueRequest() {
 
 /*
  *
- * send: 远端发送信息
+ * send: RPCServer从远端接收到消息的buffer起始地址
  * NodeId：远端的id
  * offset：远端发送的offset信息
  * 
  */
 void RPCServer::ProcessRequest(GeneralSendBuffer * send, uint16_t NodeID, uint16_t offset) {
-	//receiveBuffer是回传给发送端的信息体
+	//构建4096字节大小的buffer
 	char receiveBuffer[CLIENT_MESSAGE_SIZE];
 	uint64_t bufferRecv = (uint64_t)send;
 	GeneralReceiveBuffer *recv = (GeneralReceiveBuffer*)receiveBuffer;
@@ -189,6 +239,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer * send, uint16_t NodeID, uint16
     	// fs->unlockReadHashItem(bufferSend->key, NodeID, bufferSend->offset);
     	return;
 	} else {
+		//这是octopus的文件系统处理逻辑
     	fs->parseMessage((char*)send, receiveBuffer);
     	// fs->recursivereaddir("/", 0);
 		Debug::debugItem("Contract Receive Buffer, size = %d.", size);

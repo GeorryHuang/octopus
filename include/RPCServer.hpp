@@ -36,6 +36,7 @@ private:
 	//ccy add start 
 	bool isMetaServer;
 	//ccy add end
+	//线程号tid到线程编号id的映射关系map
 	Thread2ID th2id;
 	vector<RPCTask*> tasks;
 	bool UnlockWait;

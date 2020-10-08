@@ -214,12 +214,21 @@ bool FileSystem::sendMessage(NodeHash hashNode, void *bufferSend, uint64_t lengt
     return true;//return _cmd.sendMessage((uint16_t)hashNode, (char *)bufferSend, lengthSend, (char *)bufferReceive, lengthReceive); /* Actual send message. */
 }
 
+
+/**
+ * 这是文件系统处理RPC请求的逻辑，
+ * 
+ * bufferRequest: RPC request的起始地址，可以近似认为这是入参
+ * bufferResponse： RPC response的起始地址，预备填写内容到此处，可以认为这是返回值
+ * 
+*/
 /* Parse message. */
 void FileSystem::parseMessage(char *bufferRequest, char *bufferResponse) 
 {
     /* No check on parameters. */
     GeneralSendBuffer *bufferGeneralSend = (GeneralSendBuffer *)bufferRequest; /* Send and request. */
     GeneralReceiveBuffer *bufferGeneralReceive = (GeneralReceiveBuffer *)bufferResponse; /* Receive and response. */
+    /*无论如何，这个消息的类型都是RESPONSE，这样client或者server接收到时可以判断这是一个回传消息*/
     bufferGeneralReceive->message = MESSAGE_RESPONSE; /* Fill response message. */
     switch(bufferGeneralSend->message) {
         case MESSAGE_ADDMETATODIRECTORY: 
@@ -1484,10 +1493,10 @@ void FileSystem::fillFilePositionInformation(uint64_t size, uint64_t offset, fil
 }  
 
 /* Read extent. That is to parse the part to read in file position information.
-   @param   path    Path of file.
-   @param   size    Size of data to read.
-   @param   offset  Offset of data to read.
-   @param   fpi     File position information buffer.
+   @param   path    Path of file. 文件路径
+   @param   size    Size of data to read. 读取文件大小
+   @param   offset  Offset of data to read. 读取文件的offset
+   @param   fpi     File position information buffer. 文件的信息体
    @return          If operation succeeds then return true, otherwise return false. */
 bool FileSystem::extentRead(const char *path, uint64_t size, uint64_t offset, file_pos_info *fpi, uint64_t *key_offset, uint64_t *key)
 {
