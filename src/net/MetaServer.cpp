@@ -35,10 +35,10 @@ ms_onvm_object *MetaServer::find_onvm_object(uint16_t oid)
 
 ms_onvm_object *MetaServer::alloc_onvm_object(unsigned char *s, uint16_t size)
 {
-	struct onvm_object *obj;
+	ms_onvm_object *obj;
 	obj = malloc(sizeof(*obj));
 	if(obj){
-		memset(obj, 0, sizeof(*obj));
+		memset(obj, 0, sizeof(ms_onvm_object));
 		memcpy(obj->name, s, MAX_OBJ_NAME_LENGTH);
 		//INIT_LIST_HEAD(&obj->next); 对比hotpot, 这个list有存在的必要吗？
 	}
@@ -59,7 +59,7 @@ uint16_t MetaServer::assgin_one_node()
 
 };
 
-ms_segment_info *MetaServer::get_segment_info(uint16_t oid)
+segment_info *MetaServer::get_segment_info(uint16_t oid)
 {
 	ms_onvm_object *obj = object_map.find(oid);
 	if(obj == NULL){
@@ -200,22 +200,28 @@ int MetaServer::establish_node(struct ms_onvm_object *obj, int index; uint16_t n
 // 	}
 // }
 
+/**
+ * 
+ * 
+ * return 0 为正常，非0则是异常
+*/
+
 int MetaServer::Handle_Obj_Post(char *input, char *recv, uint16_t NodeID)
 {
 	int idx, nr_seg = 0;
-	unsigned char *s;
+	unsigned char *objName;
 	uint16_t size;
-	struct segment_info *segment;
-	struct ms_onvm_object *obj;
-	struct onvm_request_post_obj *request;
-	struct onvm_relpy *reply；
+	segment_info *segment;
+	ms_onvm_object *obj;
+	onvm_request_post_obj *request;
+	onvm_relpy *reply；
 
-	request = (struct onvm_request_post_obj *)input;
-	reply =(struct onvm_relpy *) output;
+	request = (onvm_request_post_obj *)input;
+	reply =(onvm_relpy*) output;
 	
-	s = request->name;
+	objName = request->name;
 	size = request->size;
-	obj = find_object(s);
+	obj = find_onvm_object(objName);
     if(!obj)
     {
 		if(objsize <= 0)
@@ -223,46 +229,57 @@ int MetaServer::Handle_Obj_Post(char *input, char *recv, uint16_t NodeID)
 			Debug::notifyInfo("POST OP Failed!")obj
         	return -1;
 		}
-    	obj = alloc_onvm_object(s, size);
+		//FIXME: obj没有地方施放，会内存泄漏
+    	obj = alloc_onvm_object(objName, size);
 		if(!obj)
 		{
-			reply->status = ONVM_POST_OBJ_FAIL;
+			// reply->status = ONVM_POST_OBJ_FAIL;
 			//*reply_len = sizeof(unsigned int);
-			goto out;
+			return -1;
 		}
     	init_new_onvm_object(obj);
 		add_onvm_object(obj);       
     }
-	segment = &reply->base[0];
+	
 	for(idx = 0; idx < MAX_SEGMENT_COUNT; idx++){
 		segment->seg_id = obj->pos_info[idx].seg_id;
 		segment->node_id = obj->pos_info[idx].node_id;
 		segment++;
 		nr_seg++;
 	}
-
+	reply->status = ONVM_REPLY_SUCCESS;
+	reply->nr_seg = obj->nr_seg;
+	reply->oid = obj->oid;
+	//FIXME:C++可以这么干？
+	reply->segments = obj->segments;
+	return 0;
 }
 
-ms_segment_info* MetaServer::Handle_OBJ_GET(uint16_t oid, char *intput, char *output)
+int MetaServer::Handle_OBJ_GET(char *intput, char *output)
 {
-	ms_segment_info *seg_info = get_segment_info(oid);
+	segment_info *seg_info = get_segment_info(oid);
 	//TODO:send segmentinfo to client
 }
 
-ms_segment_info* MetaServer::Handle_OBJ_PUT(uint16_t oid, char *intput, char *output)
+int MetaServer::Handle_OBJ_PUT(char *intput, char *output)
 {
-	ms_segment_info *seg_info = get_segment_info(oid);
+	segment_info *seg_info = get_segment_info(oid);
 	//TODO:send segmentinfo to client
 }
 
-ms_segment_info *MetaServer::Handle_Obj_Delete(uint16_t oid, char *input, char *output)
+int MetaServer::Handle_Obj_Delete(char *input, char *output)
 {
-	ms_segment_info *seg_info = get_segment_info(oid);
+	segment_info *seg_info = get_segment_info(oid);
 	//TODO:send segmentinfo to client
 }
 //ccy add end
 
 
+/**
+ * send: 远端通过rdma发送的信息体的起始地址或指针
+ * 
+ * 
+*/
 void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_t offset) {
 	char reponseBuffer[CLIENT_MESSAGE_SIZE];
 	uint64_t bufferRecvAddress = (uint64_t)send;
@@ -289,14 +306,41 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
     	// fs->parseMessage((char*)send, reponseBuffer);
 		switch(send->message){
 			case MESSAGE_POST_OBJ:
-			Handle_Obj_Post(bufferRecvAddress, responseBuffer, NodeId);
-			//TODO：重置responseBuffer，设置好正确的结果，后面的逻辑会处理好返还给客户端的信息
+		
+			int ret =  Handle_Obj_Post(bufferRecvAddress, responseBuffer, NodeId);
+			//重置responseBuffer，设置好结果，后面的逻辑会处理好返还给客户端的信息。如果是ret==0，说明成功了，再Handle_Obj_Post内部设置号这个responseBuffer
+			if(0 != ret){
+				onvm_relpy *recv = (onvm_relpy*)reponseBuffer;
+				memset(responseBuffer, 0, CLIENT_MESSAGE_SIZE);
+			   recv->status = ONVM_REPLY_SUCCESS
+			   recv->
+			}
+	
 			break;
 			case MESSAGE_PUT_OBJ:
+			int ret =  Handle_OBJ_PUT(bufferRecvAddress, responseBuffer);
+			if(0 != ret){
+				onvm_relpy *recv = (onvm_relpy*)reponseBuffer;
+				memset(responseBuffer, 0, CLIENT_MESSAGE_SIZE);
+			   recv->status = ONVM_REPLY_SUCCESS
+			}
 			break;
 			case MESSAGE_DEL_OBJ:
+			Handle_OBJ_DE
+			int ret =  Handle_Obj_Delete(bufferRecvAddress, responseBuffer);
+			if(0 != ret){
+				onvm_relpy *recv = (onvm_relpy*)reponseBuffer;
+				memset(responseBuffer, 0, CLIENT_MESSAGE_SIZE);
+			   recv->status = ONVM_REPLY_SUCCESS
+			}
 			break;
 			case MESSAGE_GET_OBJ:
+			int ret =  Handle_OBJ_GET(bufferRecvAddress, responseBuffer);
+			if(0 != ret){
+				onvm_relpy *recv = (onvm_relpy*)reponseBuffer;
+				memset(responseBuffer, 0, CLIENT_MESSAGE_SIZE);
+			   recv->status = ONVM_REPLY_SUCCESS
+			}
 			break;
 		}
 
