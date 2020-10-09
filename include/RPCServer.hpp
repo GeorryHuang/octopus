@@ -22,7 +22,7 @@ typedef struct {
 } RPCTask;
 
 class RPCServer {
-private:
+protected:
 	thread *wk;
 	Configuration *conf;
 	RdmaSocket *socket;
