@@ -35,6 +35,7 @@ typedef enum {
     MESSAGE_PUT_OBJ,
     MESSAGE_DEL_OBJ,
     MESSAGE_ALLOC_SEG_AT_DS,
+    MESSAGE_READ_SEG,
     //ccy add end                        /* Message enumerator. */
     MESSAGE_ADDMETATODIRECTORY,
     MESSAGE_REMOVEMETAFROMDIRECTORY,
@@ -65,7 +66,7 @@ typedef enum {
 
 //ccy add start 
 typedef enum{
-    ONVM_POST_OBJ_FAIL,
+    ONVM_FAIL,
     ONVM_REPLY_SUCCESS,
 } ONVM_REPLY_STATUS;
 //ccy add end

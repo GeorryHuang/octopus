@@ -317,6 +317,30 @@ uint16_t objSize;
 	return 0;
 }
 
+//FIXME:当前没有检查是否已存在
+int MetaServer::Handle_OBJ_ALLOC_SEG_AT_DS(char *recvBuffer, char *responseBuffer){
+	segment_data *seg_data = malloc(sizeof(segment_data));
+	SegmentCreateRequest *c_request = (SegmentCreateRequest*)recvBuffer;
+	segment_map.insert(pair<uint16_t, segment_data*>(c_request->seg_id, seg_data));
+	return 0;
+}
+
+
+int MetaServer::Handle_READ_SEG(char *recvBuffer, char *responseBuffer){
+	SegmentCreateRequest *c_request = (SegmentCreateRequest*)recvBuffer;
+	segment_data* ret = segment_map.find(c_request->seg_id);
+	if(segment_data == NULL){
+		Debug::notifyInfo("this seg is not found!");
+		return -1;
+	}
+	segment_reply * segmentReply = (segment_reply*) responseBuffer;
+	segmentReply->seg_id = c_request->seg_id;
+	memcpy(segmentReply->seg, ret->seg, SEGMENT_SIZE);
+	return 0;
+}
+
+
+
 int MetaServer::Handle_OBJ_GET(char *recvBuffer, char *responseBuffer)
 {
 	onvm_request *request = (onvm_request_post_obj*)recvBuffer
@@ -335,10 +359,9 @@ void obj2reply(ms_onvm_object *obj, char *rep){
 	reply->oid = obj->oid;
 }
 
-int MetaServer::Handle_OBJ_PUT(char *intput, char *output)
+int MetaServer::Handle_OBJ_PUT(char *recvBuffer, char *responseBuffer)
 {
-	segment_info *seg_info = get_segment_info(oid);
-	//TODO:send segmentinfo to client
+	this.Handle_OBJ_GET(recvBuffer, responseBuffer);
 }
 
 int MetaServer::Handle_Obj_Delete(char *input, char *output)
@@ -390,7 +413,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 			if(0 != ret){
 				onvm_relpy *recv = (onvm_relpy*)reponseBuffer;
 				memset(responseBuffer, 0, CLIENT_MESSAGE_SIZE);
-			   recv->status = ONVM_REPLY_SUCCESS
+			   recv->status = ONVM_FAIL ; 
 			   recv->
 			}
 	
@@ -400,7 +423,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 			if(0 != ret){
 				onvm_relpy *recv = (onvm_relpy*)reponseBuffer;
 				memset(responseBuffer, 0, CLIENT_MESSAGE_SIZE);
-			   recv->status = ONVM_REPLY_SUCCESS
+			   recv->status = ONVM_FAIL
 			}
 			break;
 			case MESSAGE_DEL_OBJ:
@@ -409,7 +432,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 			if(0 != ret){
 				onvm_relpy *recv = (onvm_relpy*)reponseBuffer;
 				memset(responseBuffer, 0, CLIENT_MESSAGE_SIZE);
-			   recv->status = ONVM_REPLY_SUCCESS
+			   recv->status = ONVM_FAIL
 			}
 			break;
 			case MESSAGE_GET_OBJ:
@@ -417,7 +440,23 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 			if(0 != ret){
 				onvm_relpy *recv = (onvm_relpy*)reponseBuffer;
 				memset(responseBuffer, 0, CLIENT_MESSAGE_SIZE);
-			   recv->status = ONVM_REPLY_SUCCESS
+			   recv->status = ONVM_FAIL
+			}
+			break;
+			case MESSAGE_ALLOC_SEG_AT_DS:
+			int ret =  Handle_OBJ_ALLOC_SEG_AT_DS(bufferRecvAddress, responseBuffer);
+			if(0 != ret){
+				onvm_relpy *recv = (onvm_relpy*)reponseBuffer;
+				memset(responseBuffer, 0, CLIENT_MESSAGE_SIZE);
+			   recv->status = ONVM_FAIL
+			}
+			break;
+			case MESSAGE_READ_SEG:
+			int ret =  Handle_OBJ_ALLOC_SEG_AT_DS(bufferRecvAddress, responseBuffer);
+			if(0 != ret){
+				onvm_relpy *recv = (onvm_relpy*)reponseBuffer;
+				memset(responseBuffer, 0, CLIENT_MESSAGE_SIZE);
+			   recv->status = ONVM_FAIL
 			}
 			break;
 		}

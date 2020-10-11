@@ -18,7 +18,8 @@ private:
 	thread *wk;
 	Configuration *conf;
 	RPCClient *client;
-    unordered_map<uint16_t, ms_onvm_object> object_map;
+    unordered_map<uint16_t, ms_onvm_object*> object_map;
+    unordered_map<uint16_t, segment*> segment_map;
 public:	
 	MetaServer(int cqsize);
     ms_onvm_object *find_onvm_object(unsigned char *s);

@@ -38,11 +38,22 @@ typedef struct {
     segment_info segments[MAX_SEGMENT_COUNT]; /*base of segment info array */
 } onvm_relpy;
 
+
+typedef struct{
+    uint16_t seg_id;
+    char seg[SEGMENT_SIZE];
+} segment_reply;
+
+
 typedef struct {
     uint16_t seg_id;
     uint16_t node_id;
 }segment_info;
 
+
+typedef struct {
+    char seg[SEGMENT_SIZE]
+} segment_data;
 
 typedef struct
 {
