@@ -18,12 +18,12 @@ MetaServer::~MetaServer() {
 	delete socket;
 	Debug::notifyInfo("MetaServer is closed successfully.");
 }
-void MetaServer::add_onvm_object(struct ms_onvm_object *obj)
+void MetaServer::add_onvm_object(ms_onvm_object *obj)
 {
-	object_map[obj->oid] = obj;
+	object_map.insert(pair<uint16_t,ms_onvm_object*>(obj->oid,obj));
 }
 
-ms_onvm_object *MetaServer::find_onvm_object(uint16_t oid)
+ms_onvm_object* MetaServer::find_onvm_object(uint16_t oid)
 {
 	ms_onvm_object *obj = object_map.find(oid);
 	if(obj == NULL){
@@ -31,6 +31,11 @@ ms_onvm_object *MetaServer::find_onvm_object(uint16_t oid)
 		return NULL;
 	}
 	return obj;
+}
+
+
+void MetaServer::del_onvm_object(uint16_t oid){
+	object_map.erase(oid);
 }
 
 /**
@@ -312,10 +317,22 @@ uint16_t objSize;
 	return 0;
 }
 
-int MetaServer::Handle_OBJ_GET(char *intput, char *output)
+int MetaServer::Handle_OBJ_GET(char *recvBuffer, char *responseBuffer)
 {
-	segment_info *seg_info = get_segment_info(oid);
-	//TODO:send segmentinfo to client
+	onvm_request *request = (onvm_request_post_obj*)recvBuffer
+	ms_onvm_object *obj = find_onvm_object(request->oid);
+	onvm_reply *reply = (onvm_reply*)responseBuffer;
+	memset(reply,0,sizeof(onvm_reply));
+	obj2reply(obj,reply);
+}
+
+
+void obj2reply(ms_onvm_object *obj, char *rep){
+	onvm_relpy *reply = (onvm_relpy*)rep;
+	memcpy(reply->segments, obj->segments, MAX_SEGMENT_COUNT);
+	reply->status= ONVM_REPLY_SUCCESS;
+	reply->nr_seg = obj->nr_seg;
+	reply->oid = obj->oid;
 }
 
 int MetaServer::Handle_OBJ_PUT(char *intput, char *output)
@@ -326,8 +343,12 @@ int MetaServer::Handle_OBJ_PUT(char *intput, char *output)
 
 int MetaServer::Handle_Obj_Delete(char *input, char *output)
 {
-	segment_info *seg_info = get_segment_info(oid);
-	//TODO:send segmentinfo to client
+	onvm_request *request = (onvm_request_post_obj*)recvBuffer
+	del_onvm_object(request->oid);
+
+	onvm_reply *reply = (onvm_reply*)responseBuffer;
+	memset(reply,0,sizeof(onvm_reply));
+	reply->status=ONVM_REPLY_SUCCESS;
 }
 //ccy add end
 

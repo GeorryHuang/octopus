@@ -13,11 +13,17 @@ static uint16_t SEG_NO_COUNTER;
 static uint16_t OBJ_NO_COUNTER;
 
 //client发送给metaserver或者dataServer的
-typedef struct : GeneralSendBuffer  {
+typedef struct : onvm_request  {
     uint16_t objSize;
-    uint16_t oid;//创建时用不到，其他操作会用
     unsigned char name[MAX_OBJ_NAME_LENGTH];
 } onvm_request_post_obj;
+
+typedef struct : GeneralSendBuffer {
+    uint16_t oid;
+} onvm_request;
+
+
+
 
 //dataServer接收的信息
 typedef struct : GeneralSendBuffer {
