@@ -12,15 +12,19 @@ using namespace std;
 static uint16_t SEG_NO_COUNTER;
 static uint16_t OBJ_NO_COUNTER;
 
+typedef struct : GeneralSendBuffer {
+    uint16_t oid;
+} onvm_request;
+
+
+
 //client发送给metaserver或者dataServer的
-typedef struct : onvm_request  {
+typedef struct : onvm_request {
     uint16_t objSize;
     unsigned char name[MAX_OBJ_NAME_LENGTH];
 } onvm_request_post_obj;
 
-typedef struct : GeneralSendBuffer {
-    uint16_t oid;
-} onvm_request;
+
 
 
 

@@ -22,12 +22,12 @@ private:
     unordered_map<uint16_t, segment*> segment_map;
 public:	
 	MetaServer(int cqsize);
-    ms_onvm_object *find_onvm_object(unsigned char *s);
+    ms_onvm_object *find_onvm_object(uint16_t);
     ms_onvm_object *alloc_onvm_object(unsigned char *s, uint16_t size);
     segment_info *get_segment_info(uint16_t oid);
-    int init_new_onvm_object(struct ms_onvm_object *obj);
-    int establish_node(struct ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id);
-    int add_onvm_object(struct ms_onvm_object *obj);
+    int init_new_onvm_object( ms_onvm_object *obj);
+    int establish_node( ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id);
+    void add_onvm_object( ms_onvm_object *obj);
     void ParseMessage(char *bufferRequest, char *bufferResponse, uint16_t NodeID);
 	void ProcessRequest(ObjectSendBuffer *send, uint16_t NodeID);
     void Handle_Obj_Post(char *input, char *output, int sender_id, uint16_t size);
