@@ -102,6 +102,8 @@ segment_info *MetaServer::get_segment_info(uint16_t oid)
 
 /**
  * 为obj分配在不同的node上分配segment，并赋值到ms_ovnm_object对象中。
+ * send: RDMA的发送buffer
+ * response: RDMA的response的buffer
  * obj: 对象结构信息
  * index: obj的第index个segement
  * node_id: 存放这个segment的node_id
@@ -109,33 +111,36 @@ segment_info *MetaServer::get_segment_info(uint16_t oid)
  * return 0 if success, !=0 failed
  * 
 */
-int MetaServer::establish_node(struct ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id)
+int MetaServer::establish_node(char * sendBuffer, char* response,  ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id)
 {
-	//一个是发送体一个是接收体，都用于
-	struct SegmentCreateRequest request*;
-	struct onvm_reply   reply*;
+	SegmentCreateRequest *request = (SegmentCreateRequest*)sendBufer;
+	onvm_reply *reply = (onvm_reply*)response;
 
-	struct ms_segment_info *s;
-	unsigned int size;
-
-	request.message = MESSAGE_ALLOC_SEG_AT_DS;
-	request.seg_id = seg_id;
+	request->message = MESSAGE_ALLOC_SEG_AT_DS;
+	request->seg_id = seg_id;
 	//size = sizeof(request.message) + sizeof(request.seg_id);
 	//TODO:send alloc segment request to DS
 	/*发送时传入node_id，结构体的起始64位地址，以及结构体的字节数目
-	发送结构体包含信息：	message_type为create_segment;
-						segment_id
 	*/
-	this.socket->RdmaSend(node_id, )
-	//TODO:socket->RdmaSend();
-	if(reply.status != ONVM_REPLY_SUCCESS){
-		Debug::notifyError("Alloc segment failed!");
+
+
+	if(0!=this.socket->RdmaSend(node_id, (uint64_t)SegmentCreateRequest, sizeof(SegmentCreateRequest))){
+		Debug::notifyError("Alloc segment failed! Reason: RdmaSend failed");
 		return -1;
 	}
-	s = &(obj->pos_info[index]);
-	s->seg_id = seg_id;
-	s->node_id = node_id;
+	if(0!=this.socket->RdmaReceive(node_id, (uint64_t)reply, sizeof(onvm_reply))){
+		Debug::notifyError("Alloc segment failed! Reason: RdmaReceive failed");
+		return -1;
+	}
+	
+	if(reply.status != ONVM_REPLY_SUCCESS){
+		Debug::notifyError("Alloc segment failed! DataServer reply not ONVM_REPLY_SUCCESS");
+		return -1;
+	}
 
+	// s = &(obj->pos_info[index]);
+	// s->seg_id = seg_id;
+	// s->node_id = node_id;
 	return 0;
 }
 
