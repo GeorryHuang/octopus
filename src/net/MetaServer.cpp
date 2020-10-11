@@ -33,7 +33,12 @@ ms_onvm_object *MetaServer::find_onvm_object(uint16_t oid)
 	return obj;
 }
 
-ms_onvm_object *MetaServer::alloc_onvm_object(unsigned char *objName, uint16_t objSize)
+/**
+ * 在堆内构建一个一个ms_onvm_object结构体并返回它的引用;通过rdma联系所有的node构建这个obj的segment
+ * 
+ * 
+*/
+ms_onvm_object *MetaServer::alloc_onvm_object(char * recvBuffer, char* response, unsigned char *objName, uint16_t objSize)
 {
 	ms_onvm_object *obj;
 	obj = malloc(sizeof(*obj));
@@ -44,15 +49,21 @@ ms_onvm_object *MetaServer::alloc_onvm_object(unsigned char *objName, uint16_t o
 		return -1;
 	}
 
+	//这个nr_established可以用来作是否完成所有seg创建的判断，但现阶段用不上
 	int  nr_established = 0;
+	int seg_size = ceil(obj->size/SEGMENT_SIZE);
 	obj->oid = assign_global_oid();
 	int i;
-	for(i = 0; i < ceil(obj->size/SEGMENT_SIZE); i++){
-		obj->oid = oid;
-		if(!establish_node(obj, i, assgin_one_node(), assign_global_seg_id()))
+	for(i = 0; i < seg_size; i++){
+		segment_info *seg_p = obj->segments[i];
+		seg_p->node_id = assgin_one_node();
+		seg_p->seg_id = assign_global_seg_id()
+		// char * recvBuffer, char* response,  ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id
+		if(!establish_node(recvBuffer, response, obj, i, seg_p->node_id, seg_p->seg_id))
 			nr_established++;
 	}
-	obj->nr_seg=i;
+
+	obj->nr_seg=seg_size;
 	obj->size = objSize;
 	memcpy(obj->name, objName, MAX_OBJ_NAME_LENGTH);
 	obj->timeLastModified = 0;
@@ -111,7 +122,7 @@ segment_info *MetaServer::get_segment_info(uint16_t oid)
  * return 0 if success, !=0 failed
  * 
 */
-int MetaServer::establish_node(char * sendBuffer, char* response,  ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id)
+int MetaServer::establish_node(char * recvBuffer, char* response,  ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id)
 {
 	SegmentCreateRequest *request = (SegmentCreateRequest*)sendBufer;
 	onvm_reply *reply = (onvm_reply*)response;
@@ -241,31 +252,30 @@ int MetaServer::establish_node(char * sendBuffer, char* response,  ms_onvm_objec
  * return 0 为正常，非0则是异常
 */
 
-int MetaServer::Handle_Obj_Post(char *input, char *recv, uint16_t NodeID)
+int MetaServer::Handle_Obj_Post(char *recvBuffer, char *responseBuffer, uint16_t NodeID)
 {
-	int idx, nr_seg = 0;
-	unsigned char *objName;
-	uint16_t objSize;
-	segment_info *segment;
-	ms_onvm_object *obj;
-	onvm_request_post_obj *request;
-	onvm_relpy *reply；
 
-	request = (onvm_request_post_obj *)input;
-	reply =(onvm_relpy*) output;
-	
-	objName = request->name;
-	objSize = request->objsize;
+/*
+uint16_t objSize;
+    uint16_t oid;//创建时用不到，其他操作会用
+    unsigned char name[MAX_OBJ_NAME_LENGTH];
+*/
+	onvm_request_post_obj *request = (onvm_request_post_obj*)recvBuffer
+	uint16_t objSize = request->objSize;
+	unsigned char objName[MAX_OBJ_NAME_LENGTH];
+	memset(objName,0,MAX_OBJ_NAME_LENGTH);
+	memcpy(objName, request->name, MAX_OBJ_NAME_LENGTH);
+
 	obj = find_onvm_object(objName);
     if(!obj)
     {
-		if(objsize <= 0)
+		if(objSize <= 0)
         {
 			Debug::notifyInfo("POST OP Failed!")obj
         	return -1;
 		}
 		//FIXME: obj没有地方施放，会内存泄漏
-    	obj = alloc_onvm_object(objName, objSize);
+    	obj = alloc_onvm_object(recvBuffer, responseBuffer, objName, objSize);
 		if(!obj)
 		{
 			// reply->status = ONVM_POST_OBJ_FAIL;
@@ -276,17 +286,29 @@ int MetaServer::Handle_Obj_Post(char *input, char *recv, uint16_t NodeID)
 		add_onvm_object(obj);       
     }
 	
-	for(idx = 0; idx < MAX_SEGMENT_COUNT; idx++){
-		segment->seg_id = obj->pos_info[idx].seg_id;
-		segment->node_id = obj->pos_info[idx].node_id;
-		segment++;
-		nr_seg++;
-	}
+	// for(idx = 0; idx < MAX_SEGMENT_COUNT; idx++){
+	// 	segment->seg_id = obj->pos_info[idx].seg_id;
+	// 	segment->node_id = obj->pos_info[idx].node_id;
+	// 	segment++;
+	// 	nr_seg++;
+	// }
+
+
+
+/*
+    ONVM_REPLY_STATUS status;
+    uint16_t nr_seg; 
+    uint16_t oid;
+    segment_info segments[MAX_SEGMENT_COUNT]; 
+*/
+	onvm_relpy *reply = (onvm_relpy*)responseBuffer;
+	memset(reply, 0, sizeof(onvm_reply));
+
+
 	reply->status = ONVM_REPLY_SUCCESS;
 	reply->nr_seg = obj->nr_seg;
 	reply->oid = obj->oid;
-	//FIXME:C++可以这么干？
-	reply->segments = obj->segments;
+	memcpy(reply->segments, obj->segments, sizeof(segment_info)*MAX_SEGMENT_COUNT);
 	return 0;
 }
 
