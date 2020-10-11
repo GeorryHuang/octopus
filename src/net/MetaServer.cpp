@@ -33,15 +33,29 @@ ms_onvm_object *MetaServer::find_onvm_object(uint16_t oid)
 	return obj;
 }
 
-ms_onvm_object *MetaServer::alloc_onvm_object(unsigned char *s, uint16_t size)
+ms_onvm_object *MetaServer::alloc_onvm_object(unsigned char *objName, uint16_t objSize)
 {
 	ms_onvm_object *obj;
 	obj = malloc(sizeof(*obj));
 	if(obj){
 		memset(obj, 0, sizeof(ms_onvm_object));
-		memcpy(obj->name, s, MAX_OBJ_NAME_LENGTH);
 		//INIT_LIST_HEAD(&obj->next); 对比hotpot, 这个list有存在的必要吗？
+	}else {
+		return -1;
 	}
+
+	int  nr_established = 0;
+	obj->oid = assign_global_oid();
+	int i;
+	for(i = 0; i < ceil(obj->size/SEGMENT_SIZE); i++){
+		obj->oid = oid;
+		if(!establish_node(obj, i, assgin_one_node(), assign_global_seg_id()))
+			nr_established++;
+	}
+	obj->nr_seg=i;
+	obj->size = objSize;
+	memcpy(obj->name, objName, MAX_OBJ_NAME_LENGTH);
+	obj->timeLastModified = 0;
 	return obj;
 }
 uint16_t MetaServer::assign_global_seg_id()
@@ -54,9 +68,10 @@ uint16_t MetaServer::assign_global_oid()
 	return OBJ_NO_COUNTER++;
 }
 
+//FIXME:这。。。。
 uint16_t MetaServer::assgin_one_node()
 {
-
+	return 1
 };
 
 segment_info *MetaServer::get_segment_info(uint16_t oid)
@@ -69,25 +84,37 @@ segment_info *MetaServer::get_segment_info(uint16_t oid)
 	return obj->pos_info;
 }
 
-int MetaServer::init_new_onvm_object(struct ms_onvm_object *obj)
-{
-	int index,  nr_established = 0;
-	uint16_t seg_id, node_id, oid;
+// int MetaServer::init_new_onvm_object(struct ms_onvm_object *obj)
+// {
+// 	int index,  nr_established = 0;
+// 	uint16_t seg_id, node_id, oid;
 
-	oid = assign_global_oid();
-	for(index = 0; index < ceil(obj->size/SEGMENT_SIZE); index++){
-		node_id = assgin_one_node();
-		seg_id = assign_global_seg_id();	
-		obj->oid = oid;
-		if(!establish_node(obj, index, node_id, seg_id))
-			nr_established++;
-	}
-}
+// 	oid = assign_global_oid();
+// 	for(index = 0; index < ceil(obj->size/SEGMENT_SIZE); index++){
+// 		node_id = assgin_one_node();
+// 		seg_id = assign_global_seg_id();	
+// 		obj->oid = oid;
+// 		if(!establish_node(obj, index, node_id, seg_id))
+// 			nr_established++;
+// 	}
+// }
 
+
+/**
+ * 为obj分配在不同的node上分配segment，并赋值到ms_ovnm_object对象中。
+ * obj: 对象结构信息
+ * index: obj的第index个segement
+ * node_id: 存放这个segment的node_id
+ * seg_id: 这个segment的id
+ * return 0 if success, !=0 failed
+ * 
+*/
 int MetaServer::establish_node(struct ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id)
 {
-	struct onvm_request request;
-	struct onvm_reply   reply;
+	//一个是发送体一个是接收体，都用于
+	struct SegmentCreateRequest request*;
+	struct onvm_reply   reply*;
+
 	struct ms_segment_info *s;
 	unsigned int size;
 
@@ -95,7 +122,10 @@ int MetaServer::establish_node(struct ms_onvm_object *obj, int index; uint16_t n
 	request.seg_id = seg_id;
 	//size = sizeof(request.message) + sizeof(request.seg_id);
 	//TODO:send alloc segment request to DS
-
+	/*发送时传入node_id，结构体的起始64位地址，以及结构体的字节数目
+	发送结构体包含信息：	message_type为create_segment;
+						segment_id
+	*/
 	this.socket->RdmaSend(node_id, )
 	//TODO:socket->RdmaSend();
 	if(reply.status != ONVM_REPLY_SUCCESS){
@@ -210,7 +240,7 @@ int MetaServer::Handle_Obj_Post(char *input, char *recv, uint16_t NodeID)
 {
 	int idx, nr_seg = 0;
 	unsigned char *objName;
-	uint16_t size;
+	uint16_t objSize;
 	segment_info *segment;
 	ms_onvm_object *obj;
 	onvm_request_post_obj *request;
@@ -220,7 +250,7 @@ int MetaServer::Handle_Obj_Post(char *input, char *recv, uint16_t NodeID)
 	reply =(onvm_relpy*) output;
 	
 	objName = request->name;
-	size = request->size;
+	objSize = request->objsize;
 	obj = find_onvm_object(objName);
     if(!obj)
     {
@@ -230,14 +260,14 @@ int MetaServer::Handle_Obj_Post(char *input, char *recv, uint16_t NodeID)
         	return -1;
 		}
 		//FIXME: obj没有地方施放，会内存泄漏
-    	obj = alloc_onvm_object(objName, size);
+    	obj = alloc_onvm_object(objName, objSize);
 		if(!obj)
 		{
 			// reply->status = ONVM_POST_OBJ_FAIL;
 			//*reply_len = sizeof(unsigned int);
 			return -1;
 		}
-    	init_new_onvm_object(obj);
+    	// init_new_onvm_object(obj);
 		add_onvm_object(obj);       
     }
 	

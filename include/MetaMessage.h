@@ -23,7 +23,7 @@ typedef struct : GeneralSendBuffer  {
 typedef struct : GeneralSendBuffer {
     uint16_t seg_id;
     //uint16_t segoff /* segment 在数据节点上的offset */
-} onvm_request;
+} SegmentCreateRequest;
 
 typedef struct {
     ONVM_REPLY_STATUS status;
