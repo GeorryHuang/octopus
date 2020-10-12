@@ -36,10 +36,15 @@ typedef struct : GeneralSendBuffer {
 } SegmentCreateRequest;
 
 typedef struct {
+    uint16_t seg_id;
+    uint16_t node_id;
+} obj_segment_info;
+
+typedef struct {
     ONVM_REPLY_STATUS status;
     uint16_t nr_seg; /*Number of Segs this object have */
     uint16_t oid;
-    segment_info segments[MAX_SEGMENT_COUNT]; /*base of segment info array */
+    obj_segment_info segments[MAX_SEGMENT_COUNT]; /*base of segment info array */
 } onvm_relpy;
 
 
@@ -49,14 +54,11 @@ typedef struct{
 } segment_reply;
 
 
-typedef struct {
-    uint16_t seg_id;
-    uint16_t node_id;
-}segment_info;
+
 
 
 typedef struct {
-    char seg[SEGMENT_SIZE]
+    char seg[SEGMENT_SIZE];
 } segment_data;
 
 typedef struct
@@ -66,7 +68,7 @@ typedef struct
 	time_t timeLastModified;
 	uint16_t size;//obj字节数
     uint16_t nr_seg;
-	segment_info segments[MAX_SEGMENT_COUNT];
+	obj_segment_info segments[MAX_SEGMENT_COUNT];
 } ms_onvm_object;
 
 #endif

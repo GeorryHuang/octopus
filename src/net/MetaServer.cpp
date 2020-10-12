@@ -3,8 +3,9 @@
 //ccy add start
 MetaServer::MetaServer(int _cqSize) :cqSize(_cqSize), {
 	
-	socket = new RdmaSocket(cqSize, 0, 0), conf, true, 0);
-	client = new RPCClient(conf, socket, mem, (uint64_t)mm);
+		// RdmaSocket(int _cqNum, uint64_t _mm, uint64_t _mmSize, Configuration* _conf, bool isServer, uint8_t Mode);
+	// socket = new RdmaSocket(cqSize, 0, 0), conf, true, 0);
+	// client = new RPCClient(conf, socket, mem, (uint64_t)mm);
 	//TODO:initialize MetaServer
 	socket->RdmaListen();
 }
@@ -25,12 +26,13 @@ void MetaServer::add_onvm_object(ms_onvm_object *obj)
 
 ms_onvm_object* MetaServer::find_onvm_object(uint16_t oid)
 {
-	ms_onvm_object *obj = object_map.find(oid);
-	if(obj == NULL){
+	unordered_map<uint16_t, ms_onvm_object*>::iterator iter;
+	iter = object_map.find(oid);
+	if(iter == object_map.end()){
 		Debug::notifyInfo("this object is not found!");
 		return NULL;
 	}
-	return obj;
+	return iter->second;
 }
 
 
@@ -46,12 +48,12 @@ void MetaServer::del_onvm_object(uint16_t oid){
 ms_onvm_object *MetaServer::alloc_onvm_object(char * recvBuffer, char* response, unsigned char *objName, uint16_t objSize)
 {
 	ms_onvm_object *obj;
-	obj = malloc(sizeof(*obj));
+	obj = (ms_onvm_object*)malloc(sizeof(obj));
 	if(obj){
-		memset(obj, 0, sizeof(ms_onvm_object));
+		std::memset(obj, 0, sizeof(ms_onvm_object));
 		//INIT_LIST_HEAD(&obj->next); 对比hotpot, 这个list有存在的必要吗？
 	}else {
-		return -1;
+		return NULL;
 	}
 
 	//这个nr_established可以用来作是否完成所有seg创建的判断，但现阶段用不上
@@ -60,7 +62,7 @@ ms_onvm_object *MetaServer::alloc_onvm_object(char * recvBuffer, char* response,
 	obj->oid = assign_global_oid();
 	int i;
 	for(i = 0; i < seg_size; i++){
-		segment_info *seg_p = obj->segments[i];
+		obj_segment_info *seg_p = obj->segments[i];
 		seg_p->node_id = assgin_one_node();
 		seg_p->seg_id = assign_global_seg_id()
 		// char * recvBuffer, char* response,  ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id
@@ -90,7 +92,7 @@ uint16_t MetaServer::assgin_one_node()
 	return 1
 };
 
-segment_info *MetaServer::get_segment_info(uint16_t oid)
+obj_segment_info *MetaServer::get_segment_info(uint16_t oid)
 {
 	ms_onvm_object *obj = object_map.find(oid);
 	if(obj == NULL){
@@ -304,7 +306,7 @@ uint16_t objSize;
     ONVM_REPLY_STATUS status;
     uint16_t nr_seg; 
     uint16_t oid;
-    segment_info segments[MAX_SEGMENT_COUNT]; 
+    obj_segment_info segments[MAX_SEGMENT_COUNT]; 
 */
 	onvm_relpy *reply = (onvm_relpy*)responseBuffer;
 	memset(reply, 0, sizeof(onvm_reply));
@@ -313,7 +315,7 @@ uint16_t objSize;
 	reply->status = ONVM_REPLY_SUCCESS;
 	reply->nr_seg = obj->nr_seg;
 	reply->oid = obj->oid;
-	memcpy(reply->segments, obj->segments, sizeof(segment_info)*MAX_SEGMENT_COUNT);
+	memcpy(reply->segments, obj->segments, sizeof(obj_segment_info)*MAX_SEGMENT_COUNT);
 	return 0;
 }
 
