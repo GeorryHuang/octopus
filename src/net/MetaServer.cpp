@@ -1,8 +1,7 @@
 #include "MetaServer.hpp"
 // __thread struct  timeval startt, endd;
 //ccy add start
-MetaServer::MetaServer(int _cqSize) :cqSize(_cqSize), {
-	
+MetaServer::MetaServer(int _cqSize): RPCServer(_cqSize){
 		// RdmaSocket(int _cqNum, uint64_t _mm, uint64_t _mmSize, Configuration* _conf, bool isServer, uint8_t Mode);
 	// socket = new RdmaSocket(cqSize, 0, 0), conf, true, 0);
 	// client = new RPCClient(conf, socket, mem, (uint64_t)mm);
@@ -62,9 +61,9 @@ ms_onvm_object *MetaServer::alloc_onvm_object(char * recvBuffer, char* response,
 	obj->oid = assign_global_oid();
 	int i;
 	for(i = 0; i < seg_size; i++){
-		obj_segment_info *seg_p = obj->segments[i];
+		obj_segment_info *seg_p = &(obj->segments[i]);
 		seg_p->node_id = assgin_one_node();
-		seg_p->seg_id = assign_global_seg_id()
+		seg_p->seg_id = assign_global_seg_id();
 		// char * recvBuffer, char* response,  ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id
 		if(!establish_node(recvBuffer, response, obj, i, seg_p->node_id, seg_p->seg_id))
 			nr_established++;
@@ -72,7 +71,7 @@ ms_onvm_object *MetaServer::alloc_onvm_object(char * recvBuffer, char* response,
 
 	obj->nr_seg=seg_size;
 	obj->size = objSize;
-	memcpy(obj->name, objName, MAX_OBJ_NAME_LENGTH);
+	std::memcpy(obj->name, objName, MAX_OBJ_NAME_LENGTH);
 	obj->timeLastModified = 0;
 	return obj;
 }
@@ -89,17 +88,18 @@ uint16_t MetaServer::assign_global_oid()
 //FIXME:这。。。。
 uint16_t MetaServer::assgin_one_node()
 {
-	return 1
+	return 1;
 };
 
-obj_segment_info *MetaServer::get_segment_info(uint16_t oid)
+segment_data *MetaServer::get_segment_info(uint16_t oid)
 {
-	ms_onvm_object *obj = object_map.find(oid);
-	if(obj == NULL){
+	unordered_map<uint16_t, segment_data*>::iterator iter;
+	iter = segment_map.find(oid);
+	if(iter == segment_map.end()){
 		Debug::notifyInfo("this object is not found!");
 		return NULL;
 	}
-	return obj->pos_info;
+	return iter->second;
 }
 
 // int MetaServer::init_new_onvm_object(struct ms_onvm_object *obj)
@@ -129,10 +129,10 @@ obj_segment_info *MetaServer::get_segment_info(uint16_t oid)
  * return 0 if success, !=0 failed
  * 
 */
-int MetaServer::establish_node(char * recvBuffer, char* response,  ms_onvm_object *obj, int index; uint16_t node_id; uint16_t seg_id)
+int MetaServer::establish_node(char * recvBuffer, char* response,  ms_onvm_object *obj, int index, uint16_t node_id, uint16_t seg_id)
 {
-	SegmentCreateRequest *request = (SegmentCreateRequest*)sendBufer;
-	onvm_reply *reply = (onvm_reply*)response;
+	SegmentCreateRequest *request = (SegmentCreateRequest*)recvBuffer;
+	onvm_reply *reply = (onvm_reply *)response;
 
 	request->message = MESSAGE_ALLOC_SEG_AT_DS;
 	request->seg_id = seg_id;
@@ -142,16 +142,16 @@ int MetaServer::establish_node(char * recvBuffer, char* response,  ms_onvm_objec
 	*/
 
 
-	if(0!=this.socket->RdmaSend(node_id, (uint64_t)SegmentCreateRequest, sizeof(SegmentCreateRequest))){
+	if(0!=socket->RdmaSend(node_id, (uint64_t)request, sizeof(SegmentCreateRequest))){
 		Debug::notifyError("Alloc segment failed! Reason: RdmaSend failed");
 		return -1;
 	}
-	if(0!=this.socket->RdmaReceive(node_id, (uint64_t)reply, sizeof(onvm_reply))){
+	if(0!=socket->RdmaReceive(node_id, (uint64_t)reply, sizeof(onvm_reply))){
 		Debug::notifyError("Alloc segment failed! Reason: RdmaReceive failed");
 		return -1;
 	}
 	
-	if(reply.status != ONVM_REPLY_SUCCESS){
+	if(reply->status != ONVM_REPLY_SUCCESS){
 		Debug::notifyError("Alloc segment failed! DataServer reply not ONVM_REPLY_SUCCESS");
 		return -1;
 	}
@@ -267,7 +267,7 @@ uint16_t objSize;
     uint16_t oid;//创建时用不到，其他操作会用
     unsigned char name[MAX_OBJ_NAME_LENGTH];
 */
-	onvm_request_post_obj *request = (onvm_request_post_obj*)recvBuffer
+	onvm_request_post_obj *request = (onvm_request_post_obj*)recvBuffer;
 	uint16_t objSize = request->objSize;
 	unsigned char objName[MAX_OBJ_NAME_LENGTH];
 	memset(objName,0,MAX_OBJ_NAME_LENGTH);
@@ -278,7 +278,7 @@ uint16_t objSize;
     {
 		if(objSize <= 0)
         {
-			Debug::notifyInfo("POST OP Failed!")obj
+			Debug::notifyInfo("POST OP Failed!");
         	return -1;
 		}
 		//FIXME: obj没有地方施放，会内存泄漏
@@ -308,7 +308,7 @@ uint16_t objSize;
     uint16_t oid;
     obj_segment_info segments[MAX_SEGMENT_COUNT]; 
 */
-	onvm_relpy *reply = (onvm_relpy*)responseBuffer;
+	onvm_reply *reply = (onvm_reply*)responseBuffer;
 	memset(reply, 0, sizeof(onvm_reply));
 
 

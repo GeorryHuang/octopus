@@ -45,7 +45,7 @@ typedef struct {
     uint16_t nr_seg; /*Number of Segs this object have */
     uint16_t oid;
     obj_segment_info segments[MAX_SEGMENT_COUNT]; /*base of segment info array */
-} onvm_relpy;
+} onvm_reply;
 
 
 typedef struct{
