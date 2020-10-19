@@ -19,12 +19,6 @@
 #include "lock.h"
 #include <unordered_map>
 
-struct segment_info{
-    uint16_t seg_id;
-    unsigned char name[256];
-};
-
-unordered_map<uint16_t, segment_info> segment_map;
 /** Classes. **/
 class FileSystem
 {

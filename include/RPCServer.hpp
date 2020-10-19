@@ -43,6 +43,8 @@ protected:
 	void Worker(int id);
 	void ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_t offset);
 	void ProcessQueueRequest();
+	bool unlockRequest(struct ibv_wc *wc);
+	uint64_t getBufferRecvAddress(struct ibv_wc *wc, int ServerCount);
 public:
 	//ccy add start
 	RPCServer(int cqsize, bool isMetaServer);

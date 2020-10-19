@@ -21,7 +21,7 @@ typedef struct : GeneralSendBuffer {
 //client发送给metaserver或者dataServer的
 typedef struct : onvm_request {
     uint16_t objSize;
-    unsigned char name[MAX_OBJ_NAME_LENGTH];
+    char name[MAX_OBJ_NAME_LENGTH];
 } onvm_request_post_obj;
 
 
@@ -64,7 +64,7 @@ typedef struct {
 typedef struct
 {
 	uint16_t oid;
-	unsigned char name[MAX_OBJ_NAME_LENGTH];
+	char name[MAX_OBJ_NAME_LENGTH];
 	time_t timeLastModified;
 	uint16_t size;//obj字节数
     uint16_t nr_seg;

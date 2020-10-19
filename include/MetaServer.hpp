@@ -1,5 +1,6 @@
 #ifndef METASERVER_HEADER
 #define METASERVER_HEADER
+
 #include "RPCServer.hpp"
 #include "common.hpp"
 #include "MetaMessage.h"
@@ -19,14 +20,16 @@ private:
 	RPCClient *client;
     unordered_map<uint16_t, ms_onvm_object*> object_map;
     unordered_map<uint16_t, segment_data*> segment_map;
-     unordered_map<string, segment_data*> object_name_map;
+    unordered_map<string, uint16_t> name2oid_map;
     void del_onvm_object(uint16_t oid);
     ms_onvm_object *alloc_onvm_object(char * recvBuffer, char* response, unsigned char *objName, uint16_t objSize);
+    void obj2reply(ms_onvm_object *obj, char *rep);
 public:	
 	MetaServer(int cqsize);
     ms_onvm_object *find_onvm_object(uint16_t);
+    ms_onvm_object *find_onvm_object(string);
     // ms_onvm_object *alloc_onvm_object(unsigned char *s, uint16_t size);
-    segment_data *get_segment_info(uint16_t oid);
+    segment_data *get_segment_data(uint16_t oid);
     int init_new_onvm_object( ms_onvm_object *obj);
     int establish_node(char * recvBuffer, char* response,  ms_onvm_object *obj, int index, uint16_t node_id, uint16_t seg_id);
     void add_onvm_object( ms_onvm_object *obj);
@@ -41,6 +44,7 @@ public:
     uint16_t assign_global_oid();
     uint16_t assign_global_seg_id();
     uint16_t assgin_one_node();
+    void ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_t offset);
     // Segment* alloc_segment_on_node(uint16_t oid, uint16_t nodeid);
     bool Add_New_Node();
     bool Remove_Node();

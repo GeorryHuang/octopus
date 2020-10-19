@@ -1,6 +1,6 @@
 #include "RPCServer.hpp"
 // __thread struct  timeval startt, endd;
-RPCServer::RPCServer(int _cqSize, bool isMetaServer) :cqSize(_cqSize), {	
+RPCServer::RPCServer(int _cqSize, bool isMetaServer) :cqSize(_cqSize) {	
 	mm = 0;
 	UnlockWait = false;
 	mem = new MemoryManager(mm, conf->getServerCount(), 2);
@@ -78,7 +78,7 @@ void RPCServer::Worker(int id) {
  * Author：Huang Zhuoyue
 */
 bool RPCServer::unlockRequest(struct ibv_wc *wc){
-	NodeID = wc.imm_data >> 20;
+	uint16_t NodeID = wc->imm_data >> 20;
 		if (NodeID == 0XFFF) {
 			/* Unlock request, process it directly. */
 			// uint64_t hashAddress = wc[0].imm_data & 0x000FFFFF;
@@ -96,9 +96,9 @@ bool RPCServer::unlockRequest(struct ibv_wc *wc){
  * 
  * 
 */
-uint64_t getBufferRecvAddress(struct ibv_wc *wc){
-		NodeID = (uint16_t)(wc.imm_data << 16 >> 16);
-		offset = (uint16_t)(wc.imm_data >> 16);
+uint64_t RPCServer::getBufferRecvAddress(struct ibv_wc *wc, int ServerCount){
+		uint16_t NodeID = (uint16_t)(wc->imm_data << 16 >> 16);
+		uint16_t offset = (uint16_t)(wc->imm_data >> 16);
 		Debug::debugItem("NodeID = %d, offset = %d", NodeID, offset);
 		//这个count并未发现使用的地方，是作者留下的，先注释了
 		// count += 1;
@@ -127,7 +127,7 @@ void RPCServer::RequestPoller(int id) {
 	uint16_t NodeID;
 	uint16_t offset;
 	
-	int ret = 0
+	int ret = 0;
 	//这个count并未发现使用的地方，是作者留下的，先注释了
 	// int count = 0;
 	//远端的接收缓冲区，就是远端发送信息。
@@ -152,12 +152,12 @@ void RPCServer::RequestPoller(int id) {
 		return;
 	} else if (wc[0].opcode == IBV_WC_RECV_RDMA_WITH_IMM) {//这里只处理IBV_WC_RECV_RDMA_WITH_IMM，如果是其他的opcode，就会忽略掉
 		//如果是unlockRequest，直接处理完毕
-		if(unlockRequest(wc[0])){
+		if(unlockRequest(&wc[0])){
 			return;
 		}
 
 		//得到wc发送完成后的缓冲区64位地址
-		bufferRecvAddress = getBufferRecvAddress(wc[0]);
+		bufferRecvAddress = getBufferRecvAddress(&wc[0], ServerCount);
 		//照目前逻辑来看，这里是为了复用内存，所以在接收完数据后，直接将接收的缓冲内存当作发送buffer使用。
 		GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecvAddress;
 		switch (send->message) {
