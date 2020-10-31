@@ -5,6 +5,7 @@ project(dmfs)
 set (CMAKE_C_FLAGS "-Wall -Wno-deprecated-declarations -Wsign-compare")
 set (CMAKE_CXX_FLAGS "-g ${CMAKE_C_FLAGS} -std=c++11 -Wall -O0 -DTHREAD -D_FILE_OFFSET_BITS=64 -libverbs -lfuse")
 
+
 option (SANITIZE "Turn on sanitization" OFF)
 if (SANITIZE)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
@@ -21,8 +22,7 @@ find_package(Threads REQUIRED)
 # Incs and Libs
 set(INCLUDE_BASE ${PROJECT_SOURCE_DIR}/include)
 include_directories("/usr/local/ofed/include" ${INCLUDE_BASE})
-link_libraries(${CRYPTO_LIBRARIES} ${CMAKE_DL_LIBS})
-#message("---: ${CRYPTO_LIBRARIES}")
+link_libraries(${CRYPTO_LIBRARIES} ${CMAKE_DL_LIBS}) #message("---: ${CRYPTO_LIBRARIES}")
 
 # Source file define
 set(FS_SRC ${PROJECT_SOURCE_DIR}/src/fs)
@@ -48,10 +48,10 @@ add_library(nrfsc SHARED ${NRFS_LIB_SRC})
 add_library(jninrfs SHARED ${NRFS_LIB_SRC} ${CLIB_SRC}/JavaApiImpl.cpp)
 # Build client test
 find_package(MPI REQUIRED)
+set (ORIGIN_C_COMPILER ${CMAKE_C_COMPILER})
+set (ORIGIN_CXX_COMPILER ${CMAKE_CXX_COMPILER})
 set (CMAKE_C_COMPILER ${MPI_C_COMPILER})
 set (CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L/usr/lib64/libfuse.so")
-#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L/usr/local/lib/libfuse.so")
 
 link_libraries(nrfsc)
 
@@ -63,3 +63,6 @@ foreach (TSTSRC ${TEST_SOURCES})
     add_executable(${TSTNAME} ${TSTSRC})
 endforeach()
 
+set (CMAKE_C_COMPILER ${ORIGIN_C_COMPILER})
+set (CMAKE_CXX_COMPILER ${ORIGIN_CXX_COMPILER})
+add_subdirectory(${PROJECT_SOURCE_DIR}/googletest-src  EXCLUDE_FROM_ALL)
