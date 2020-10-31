@@ -5,7 +5,6 @@ project(dmfs)
 set (CMAKE_C_FLAGS "-Wall -Wno-deprecated-declarations -Wsign-compare")
 set (CMAKE_CXX_FLAGS "-g ${CMAKE_C_FLAGS} -std=c++11 -Wall -O0 -DTHREAD -D_FILE_OFFSET_BITS=64 -libverbs -lfuse")
 
-
 option (SANITIZE "Turn on sanitization" OFF)
 if (SANITIZE)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
@@ -22,7 +21,10 @@ find_package(Threads REQUIRED)
 # Incs and Libs
 set(INCLUDE_BASE ${PROJECT_SOURCE_DIR}/include)
 include_directories("/usr/local/ofed/include" ${INCLUDE_BASE})
-link_libraries(${CRYPTO_LIBRARIES} ${CMAKE_DL_LIBS}) #message("---: ${CRYPTO_LIBRARIES}")
+link_directories("/usr/lib/" "/usr/lib/x86_64-linux-gnu")
+link_libraries(${CRYPTO_LIBRARIES} "/usr/lib/libibverbs.so" ${CMAKE_DL_LIBS} )
+link_libraries(${CRYPTO_LIBRARIES}  ${CMAKE_DL_LIBS} )
+#message("---: ${CRYPTO_LIBRARIES}")
 
 # Source file define
 set(FS_SRC ${PROJECT_SOURCE_DIR}/src/fs)
@@ -40,6 +42,7 @@ include_directories(${JNI_INCLUDE_DIRS})
 #link_libraries(${JNI_LIBRARIES})
 message("===== ${JNI_INCLUDE_DIRS} =====lib:${JNI_LIBRARIES}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L/usr/local/lib/libfuse.so")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L/usr/lib/libibverbs.so")
 set(CLIENT_BASE ${PROJECT_SOURCE_DIR}/client)
 set(CNET_SRC ${PROJECT_SOURCE_DIR}/src/net)
 set(CLIB_SRC ${PROJECT_SOURCE_DIR}/src/client)
@@ -52,17 +55,29 @@ set (ORIGIN_C_COMPILER ${CMAKE_C_COMPILER})
 set (ORIGIN_CXX_COMPILER ${CMAKE_CXX_COMPILER})
 set (CMAKE_C_COMPILER ${MPI_C_COMPILER})
 set (CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L/usr/lib64/libfuse.so")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L/usr/local/lib/libfuse.so")
 
 link_libraries(nrfsc)
 
 #add_executable(ttt ${PROJECT_SOURCE_DIR}/src/test/ttt.cpp)
 
-file(GLOB TEST_SOURCES ${PROJECT_SOURCE_DIR}/src/test/*.cpp)
-foreach (TSTSRC ${TEST_SOURCES})
-    get_filename_component(TSTNAME ${TSTSRC} NAME_WE)
-    add_executable(${TSTNAME} ${TSTSRC})
-endforeach()
+#file(GLOB TEST_SOURCES ${PROJECT_SOURCE_DIR}/src/test/*.cpp)
+#foreach (TSTSRC ${TEST_SOURCES})
+#    get_filename_component(TSTNAME ${TSTSRC} NAME_WE)
+#    add_executable(${TSTNAME} ${TSTSRC})
+#endforeach()
+
 
 set (CMAKE_C_COMPILER ${ORIGIN_C_COMPILER})
 set (CMAKE_CXX_COMPILER ${ORIGIN_CXX_COMPILER})
-add_subdirectory(${PROJECT_SOURCE_DIR}/googletest-src  EXCLUDE_FROM_ALL)
+
+#googletest
+add_subdirectory(${PROJECT_SOURCE_DIR}/googletest-src
+  EXCLUDE_FROM_ALL)
+
+if (CMAKE_VERSION VERSION_LESS 2.8.11)
+  include_directories("${gtest_SOURCE_DIR}/include")
+endif()
+
+enable_testing()
