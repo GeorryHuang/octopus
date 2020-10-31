@@ -10,7 +10,7 @@ void Stop (int signo) {
     Debug::notifyInfo("DMFS is terminated, Bye.");
     _exit(0);
 }
-/*int main() {
+int main() {
     signal(SIGINT, Stop);
     server = new RPCServer(2);
     char *p = (char *)server->getMemoryManagerInstance()->getDataAddress();
@@ -22,4 +22,4 @@ void Stop (int signo) {
     	}
     	printf("\n");
     }
-}*/
+}

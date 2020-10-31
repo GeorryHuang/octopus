@@ -1,4 +1,5 @@
 #include "MetaServer.hpp"
+#include <math.h>
 // __thread struct  timeval startt, endd;
 //ccy add start
 MetaServer::MetaServer(int _cqSize) : RPCServer(_cqSize)
