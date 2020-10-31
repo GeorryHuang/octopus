@@ -9,8 +9,8 @@ using namespace std;
 #define MAX_OBJ_NAME_LENGTH  256        
 #define SEGMENT_SIZE (4*1024*1024)
 
-static uint16_t SEG_NO_COUNTER;
-static uint16_t OBJ_NO_COUNTER;
+static uint16_t SEG_NO_COUNTER = 0 ;
+static uint16_t OBJ_NO_COUNTER = 0 ;
 
 typedef struct : GeneralSendBuffer {
     uint16_t oid;

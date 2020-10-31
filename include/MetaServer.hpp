@@ -5,6 +5,8 @@
 #include "common.hpp"
 #include "MetaMessage.h"
 #include <unordered_map>
+#include "onvm/NVMObjectPool.hpp"
+#include "onvm/SegmentPool.hpp"
 
 
 
@@ -15,6 +17,8 @@ class MetaServer: public RPCServer{
 private:
 	// unordered_map<uint32_t, ObjMeta> ObjMetaMap;
 	//TODO:继承和网络部分的修改
+    NVMObjectPool* nvmObjectPool;
+    SegmentPool* segmentPool;
 	thread *wk;
 	Configuration *conf;
 	RPCClient *client;

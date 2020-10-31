@@ -9,6 +9,8 @@ MetaServer::MetaServer(int _cqSize) : RPCServer(_cqSize)
 	// client = new RPCClient(conf, socket, mem, (uint64_t)mm);
 	//TODO:initialize MetaServer
 	socket->RdmaListen();
+	this->nvmObjectPool = new NVMObjectPool();
+	this->segmentPool = new SegmentPool();
 }
 MetaServer::~MetaServer()
 {
@@ -20,6 +22,8 @@ MetaServer::~MetaServer()
 	}
 	delete wk;
 	delete socket;
+	delete nvmObjectPool;
+	delete segmentPool;
 	Debug::notifyInfo("MetaServer is closed successfully.");
 }
 void MetaServer::add_onvm_object(ms_onvm_object *obj)
@@ -119,7 +123,10 @@ uint16_t MetaServer::assign_global_oid()
 	return OBJ_NO_COUNTER++;
 }
 
-//FIXME:这。。。。
+/**
+ * 节点编号始终是1,对应当前测试只有一个DN
+ * 
+*/
 uint16_t MetaServer::assgin_one_node()
 {
 	return 1;
@@ -308,6 +315,7 @@ uint16_t objSize;
 	char temp[MAX_OBJ_NAME_LENGTH];
 	memcpy(temp, objName, MAX_OBJ_NAME_LENGTH);
 	string findKey(temp, MAX_OBJ_NAME_LENGTH);
+
 
 	ms_onvm_object *obj = find_onvm_object(findKey);
 	if (!obj)
