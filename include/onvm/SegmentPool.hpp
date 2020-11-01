@@ -4,6 +4,40 @@
 #include "MetaMessage.h"
 #include <unordered_map>
 
+
+/**
+ * To generate global segment id. used only in MetaServer
+ * 
+ * 
+*/
+class SegmentIdGenerator{
+private:
+    uint16_t currentId;
+public:
+    SegmentIdGenerator(){
+        currentId = 0;
+    }
+    uint16_t nextId(){
+        return ++currentId;
+    }
+};
+
+/**
+ * A SegmentInfo obj describe where the Segment in(nodeId) and its segmentId
+ * Only used in MetaServer.
+ * 
+*/
+class SegmentInfo{
+public:
+    SegmentInfo(uint16_t nid, uint16_t seg_id){
+        this->nodeId = nid;
+        this->segmentId = seg_id;
+    }
+    uint16_t nodeId;
+    uint16_t segmentId;
+};
+
+
 class Segment
 {
 private:
@@ -84,7 +118,11 @@ public:
     }
     ~SegmentPool()
     {
-        
+        for(auto iter : this->segment_map){
+            if(iter!=segment_map.end()){
+               delete iter->second; 
+            }
+        }
     }
 };
 

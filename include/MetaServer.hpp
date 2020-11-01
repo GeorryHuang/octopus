@@ -19,6 +19,7 @@ private:
 	//TODO:继承和网络部分的修改
     NVMObjectPool* nvmObjectPool;
     SegmentPool* segmentPool;
+    SegmentIdGenerator segmentIdGenerator;
 	thread *wk;
 	Configuration *conf;
 	RPCClient *client;

@@ -12,7 +12,7 @@ class NVMObject
 private:
     uint16_t object_id;
     string object_name;
-    list<Segment *> segment_list;
+    list<SegmentInfo> segmentInfoList;
 
 public:
     NVMObject(uint16_t obj_id, string name)
@@ -21,18 +21,13 @@ public:
         this->object_name = name;
     }
 
-    void appendSegment(Segment *segment)
+    void appendSegment(SegmentInfo segmentInfo)
     {
-        segment_list.push_back(segment);
+        segmentInfoList.push_back(segmentInfo);
     }
 
     ~NVMObject()
     {
-        for (auto &&iter : segment_list)
-        {
-            delete iter;
-        }
-        segment_list.clear();
     }
 };
 

@@ -205,92 +205,6 @@ int MetaServer::establish_node(char *recvBuffer, char *response, ms_onvm_object 
 	return 0;
 }
 
-// void MetaServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID)
-// {
-// 	char receiveBuffer[CLIENT_MESSAGE_SIZE];
-// 	uint64_t bufferRecv = (uint64_t)send;
-// 	GeneralReceiveBuffer *recv = (GeneralReceiveBuffer*)receiveBuffer;
-// 	recv->taskID = send->taskID;
-// 	recv->message = MESSAGE_RESPONSE;
-// 	uint64_t size = send->sizeReceiveBuffer;
-
-// 	switch (send->message)
-// 	{
-// 	case MESSAGE_POST_OBJ:
-// 		/* code */
-// 		break;
-// 	case MESSAGE_GET_OBJ:
-// 		break;
-// 	case MESSAGE_PUT_OBJ:
-// 		break;
-// 	case MESSAGE_DEL_OBJ:
-
-// 		break;
-// 	case MESSAGE_ALLOC_SEG_AT_DS：
-// 		break;
-// 	default:
-// 		break;
-// 	}
-
-// 	if (send->message == MESSAGE_DISCONNECT) {
-//         //rdma->disconnect(send->sourceNodeID);
-//         return;
-//     }
-
-// 	char receiveBuffer[CLIENT_MESSAGE_SIZE];
-// 	uint64_t bufferRecv = (uint64_t)send;
-// 	ObjectRecvBuffer *recv = (GeneralReceiveBuffer*)receiveBuffer;
-// 	recv->taskID = send->taskID;
-// 	recv->message = MESSAGE_RESPONSE;
-// 	uint64_t size = send->sizeReceiveBuffer;
-// 	if (send->message == MESSAGE_DISCONNECT) {
-//         //rdma->disconnect(send->sourceNodeID);
-//         return;
-//     } else if (send->message == MESSAGE_TEST) {
-//     	;
-//     } else if (send->message == MESSAGE_UPDATEMETA) {
-//     	/* Write unlock. */
-//     	// UpdateMetaSendBuffer *bufferSend = (UpdateMetaSendBuffer *)send;
-//     	// fs->unlockWriteHashItem(bufferSend->key, NodeID, bufferSend->offset);
-//     	return;
-//     } else if (send->message == MESSAGE_EXTENTREADEND) {
-//     	/* Read unlock */
-//     	// ExtentReadEndSendBuffer *bufferSend = (ExtentReadEndSendBuffer *)send;
-//     	// fs->unlockReadHashItem(bufferSend->key, NodeID, bufferSend->offset);
-//     	return;
-// 	} else {
-// 		ParseMessage((char*)send, receiveBuffer);
-// 		//TODO:
-// 	}
-// }
-
-// void MetaServer::ParseMessage(char *bufferRequest, char *bufferResponse, uint16_t NodeID)
-// {
-// 	ObjectSendBuffer *bufferObjSend;
-// 	ObjectRecvBuffer *bufferObjRecv;
-
-// 	ObjectSendBuffer *bufferObjSend = (ObjectSendBuffer *)bufferRequest; /* Send and request. */
-//     ObjectRecvBuffer *bufferObjRecv = (ObjectRecvBuffer *)bufferResponse; /* Receive and response. */
-//     //bufferGeneralReceive->message = MESSAGE_RESPONSE; /* Fill response message. */
-// 	switch(bufferObjSend->message) {
-// 		case MESSAGE_POST_OBJ{
-// 			Handle_Obj_Post(bufferObjSend,bufferObjRecv,NodeID);
-// 			break;
-// 		}
-// 		case MESSAGE_GET_OBJ{
-// 			Handle_Obj_Get(bufferObjSend,bufferObjReceive,NodeID)
-// 			break;
-// 		}c
-// 		case MESSAGE_PUT_OBJ{
-// 			Handle_Obj_Put(bufferObjSend,bufferObjReceive,NodeID);
-// 			break;
-// 		}
-// 		case MESSAGE_DEL_OBJ{
-// 			Handle_Obj_Delete(bufferObjSend,bufferObjReceive,NodeID);
-// 			break;
-// 		}
-// 	}
-// }
 
 /**
  * 
@@ -314,42 +228,20 @@ uint16_t objSize;
 	memcpy(objName, request->name, MAX_OBJ_NAME_LENGTH);
 	char temp[MAX_OBJ_NAME_LENGTH];
 	memcpy(temp, objName, MAX_OBJ_NAME_LENGTH);
-	string findKey(temp, MAX_OBJ_NAME_LENGTH);
+	string object_name(temp, MAX_OBJ_NAME_LENGTH);
 
-
-	ms_onvm_object *obj = find_onvm_object(findKey);
-	if (!obj)
-	{
-		if (objSize <= 0)
-		{
-			Debug::notifyInfo("POST OP Failed!");
-			return -1;
-		}
-		//FIXME: obj没有地方施放，会内存泄漏
-		obj = alloc_onvm_object(recvBuffer, responseBuffer, objName, objSize);
-		if (!obj)
-		{
-			// reply->status = ONVM_POST_OBJ_FAIL;
-			//*reply_len = sizeof(unsigned int);
-			return -1;
-		}
-		// init_new_onvm_object(obj);
-		add_onvm_object(obj);
+	NVMObject* nvmObject =  nvmObjectPool->getObject(object_name);
+	if(nvmObject == NULL){
+		nvmObject = nvmObjectPool->newObject(object_name);
+		//TODO: 根据objSize，计算segment数量
+		//TODO: 根据segment的数量，分配segemntId，发送给DN，让他们分配
+		//TODO: 分配号好SegmentInfo给nvmObject
+	}else {
+		Debug::notifyInfo("Object already exit!");
+		return -1;
 	}
 
-	// for(idx = 0; idx < MAX_SEGMENT_COUNT; idx++){
-	// 	segment->seg_id = obj->pos_info[idx].seg_id;
-	// 	segment->node_id = obj->pos_info[idx].node_id;
-	// 	segment++;
-	// 	nr_seg++;
-	// }
-
-	/*
-    ONVM_REPLY_STATUS status;
-    uint16_t nr_seg; 
-    uint16_t oid;
-    obj_segment_info segments[MAX_SEGMENT_COUNT]; 
-*/
+	//TODO:构造好信息，返回给客户端。
 	onvm_reply *reply = (onvm_reply *)responseBuffer;
 	memset(reply, 0, sizeof(onvm_reply));
 
