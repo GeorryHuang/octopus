@@ -287,7 +287,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer * send, uint16_t NodeID, uint16
 			bufferRecv = 0;
 		} 
 		Debug::debugItem("send = %lx, recv = %lx", send, bufferRecv);
-		//返回消息体给发送端。
+		//返回消息体给发送端。send和bufferRecv是一个东西，send是sourceAddress，bufferRecv是descAddress，本质上是远端和本端用了相同的地址
     		socket->_RdmaBatchWrite(NodeID, (uint64_t)send, bufferRecv, size, 0, 1);
 		// socket->_RdmaBatchReceive(NodeID, mm, 0, 2);
 		//为什么这里会有receive，从接收长度为0来看，应该是进行一次ack？再发送response后，进行一次长度为0的挥手？

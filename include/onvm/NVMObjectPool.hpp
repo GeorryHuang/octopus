@@ -26,6 +26,15 @@ public:
         segmentInfoList.push_back(segmentInfo);
     }
 
+    uint16_t getSegmentsCount(){
+        return segmentInfoList.size();
+    }
+
+    uint16_t getObjectId(){
+        return this->object_id;
+    }
+    
+
     ~NVMObject()
     {
     }

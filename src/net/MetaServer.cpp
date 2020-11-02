@@ -1,5 +1,6 @@
 #include "MetaServer.hpp"
 #include <math.h>
+#include "onvm/RDMABuffer.hpp"
 // __thread struct  timeval startt, endd;
 //ccy add start
 MetaServer::MetaServer(int _cqSize) : RPCServer(_cqSize)
@@ -222,7 +223,6 @@ uint16_t objSize;
 */
 	onvm_request_post_obj *request = (onvm_request_post_obj *)recvBuffer;
 	uint16_t objSize = request->objSize;
-
 	unsigned char objName[MAX_OBJ_NAME_LENGTH];
 	memset(objName, 0, MAX_OBJ_NAME_LENGTH);
 	memcpy(objName, request->name, MAX_OBJ_NAME_LENGTH);
@@ -233,9 +233,17 @@ uint16_t objSize;
 	NVMObject* nvmObject =  nvmObjectPool->getObject(object_name);
 	if(nvmObject == NULL){
 		nvmObject = nvmObjectPool->newObject(object_name);
-		//TODO: 根据objSize，计算segment数量
-		//TODO: 根据segment的数量，分配segemntId，发送给DN，让他们分配
-		//TODO: 分配号好SegmentInfo给nvmObject
+		//根据objSize，计算segment数量
+		uint16_t segmentNum = ceil(objSize/SEGMENT_SIZE);
+		//根据segment的数量，分配segemntId，发送给DN，让他们分配
+		for(uint16_t i=0;i<segmentNum;i++){
+			uint16_t segment_id = segmentIdGenerator.nextId();
+			//TODO: 确定要发送的NodeId
+			//TODO: 完成分配DN的信息体发送。
+			//TODO: 构造SegmentInfo，并品如nvmObject里
+			//TODO: 忽略DN的返回信息，只管发送。
+			//TODO: 分配好SegmentInfo给nvmObject
+		}
 	}else {
 		Debug::notifyInfo("Object already exit!");
 		return -1;
@@ -246,11 +254,14 @@ uint16_t objSize;
 	memset(reply, 0, sizeof(onvm_reply));
 
 	reply->status = ONVM_REPLY_SUCCESS;
-	reply->nr_seg = obj->nr_seg;
-	reply->oid = obj->oid;
+	reply->nr_seg = nvmObject->getSegmentsCount();
+	reply->oid = nvmObject->getObjectId();
 	memcpy(reply->segments, obj->segments, sizeof(obj_segment_info) * MAX_SEGMENT_COUNT);
 	return 0;
 }
+
+
+
 
 //FIXME:当前没有检查是否已存在
 int MetaServer::Handle_OBJ_ALLOC_SEG_AT_DS(char *recvBuffer, char *responseBuffer)
@@ -318,10 +329,10 @@ int MetaServer::Handle_Obj_Delete(char *input, char *output)
 void MetaServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_t offset)
 {
 	char reponseBuffer[CLIENT_MESSAGE_SIZE];
+	char recvBuffer[CLIENT_MESSAGE_SIZE];
 	uint64_t bufferRecvAddress = (uint64_t)send;
-	GeneralReceiveBuffer *recv = (GeneralReceiveBuffer *)reponseBuffer;
-	recv->taskID = send->taskID;
-	recv->message = MESSAGE_RESPONSE;
+	memcpy(recvBuffer, (char*)bufferRecvAddress, CLIENT_MESSAGE_SIZE);
+	
 	uint64_t size = send->sizeReceiveBuffer;
 	if (send->message == MESSAGE_DISCONNECT)
 	{
@@ -353,7 +364,7 @@ void MetaServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16
 		{
 		case MESSAGE_POST_OBJ:
 		{
-			int ret = Handle_Obj_Post((char *)send, (char *)&reponseBuffer, NodeID);
+			int ret = Handle_Obj_Post(recvBuffer, reponseBuffer, NodeID);
 			//重置responseBuffer，设置好结果，后面的逻辑会处理好返还给客户端的信息。如果是ret==0，说明成功了，再Handle_Obj_Post内部设置号这个responseBuffer
 			if (0 != ret)
 			{
@@ -441,6 +452,12 @@ void MetaServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16
 			while (*value == 0)
 				;
 		}
+
+	GeneralReceiveBuffer *recv = (GeneralReceiveBuffer *)reponseBuffer;
+	recv->taskID = send->taskID;
+	recv->message = MESSAGE_RESPONSE;
+
+
 		Debug::debugItem("Copy Reply Data, size = %d.", size);
 		memcpy((void *)send, reponseBuffer, size);
 		Debug::debugItem("Select Buffer.");
