@@ -4,4 +4,8 @@
 		<id>1</id>
 		<ip>10.0.2.102</ip>
 	</node>
+	<node>
+		<id>2</id>
+		<ip>10.0.2.102</ip>
+	</node>
 </address>

@@ -116,3 +116,10 @@ uint64_t RPCClient::ContractSendBuffer(GeneralSendBuffer *send) {
 	// printf("contract length = %d", (int)length);
 	return length;
 }
+
+
+int main(){
+	RPCClient rpcClient;
+	rpcClient.RdmaCall(1, );
+	return 0;
+}

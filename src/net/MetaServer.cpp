@@ -256,12 +256,9 @@ uint16_t objSize;
 	reply->status = ONVM_REPLY_SUCCESS;
 	reply->nr_seg = nvmObject->getSegmentsCount();
 	reply->oid = nvmObject->getObjectId();
-	memcpy(reply->segments, obj->segments, sizeof(obj_segment_info) * MAX_SEGMENT_COUNT);
+	// memcpy(reply->segments, obj->segments, sizeof(obj_segment_info) * MAX_SEGMENT_COUNT);
 	return 0;
 }
-
-
-
 
 //FIXME:当前没有检查是否已存在
 int MetaServer::Handle_OBJ_ALLOC_SEG_AT_DS(char *recvBuffer, char *responseBuffer)
@@ -289,6 +286,7 @@ int MetaServer::Handle_READ_SEG(char *recvBuffer, char *responseBuffer)
 
 int MetaServer::Handle_Obj_Get(char *recvBuffer, char *responseBuffer)
 {
+	cout<<"handling obj_get!!"<<endl;
 	onvm_request *request = (onvm_request_post_obj *)recvBuffer;
 	ms_onvm_object *obj = find_onvm_object(request->oid);
 	onvm_reply *reply = (onvm_reply *)responseBuffer;
@@ -330,7 +328,11 @@ void MetaServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16
 {
 	char reponseBuffer[CLIENT_MESSAGE_SIZE];
 	char recvBuffer[CLIENT_MESSAGE_SIZE];
-	uint64_t bufferRecvAddress = (uint64_t)send;
+	uint64_t bufferRecvAddress = (uint64_t)send;      
+	GeneralReceiveBuffer *recv = (GeneralReceiveBuffer *)reponseBuffer;
+	recv->taskID = send->taskID;
+	recv->message = MESSAGE_RESPONSE;
+
 	memcpy(recvBuffer, (char*)bufferRecvAddress, CLIENT_MESSAGE_SIZE);
 	
 	uint64_t size = send->sizeReceiveBuffer;
