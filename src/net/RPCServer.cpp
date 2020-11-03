@@ -13,14 +13,14 @@ RPCServer::RPCServer(int _cqSize) :cqSize(_cqSize) {
 	client = new RPCClient(conf, socket, mem, (uint64_t)mm);
 	tx = new TxManager(mem->getLocalLogAddress(), mem->getDistributedLogAddress());
 	socket->RdmaListen();
-	fs = new FileSystem((char *)mem->getMetadataBaseAddress(),
-              (char *)mem->getDataAddress(),
-              1024 * 20,/* Constructor of file system. */
-              1024 * 30,
-              2000,
-              conf->getServerCount(),    
-              socket->getNodeID());
-	fs->rootInitialize(socket->getNodeID());
+	//fs = new FileSystem((char *)mem->getMetadataBaseAddress(),
+    //          (char *)mem->getDataAddress(),
+    //          1024 * 20,/* Constructor of file system. */
+    //          1024 * 30,
+    //          2000,
+    //          conf->getServerCount(),    
+    //          socket->getNodeID());
+	//fs->rootInitialize(socket->getNodeID());
 	wk = new thread[cqSize]();
 	for (int i = 0; i < cqSize; i++)
 		wk[i] = thread(&RPCServer::Worker, this, i);

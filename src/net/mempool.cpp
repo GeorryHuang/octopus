@@ -15,13 +15,13 @@ MemoryManager::MemoryManager(uint64_t _mm, uint64_t _ServerCount,  int _DataSize
         DMFSTotalSize += CLIENT_MESSAGE_SIZE * MAX_CLIENT_NUMBER;
         /* Add Server Message Pool. */
         DMFSTotalSize += SERVER_MASSAGE_SIZE * SERVER_MASSAGE_NUM * ServerCount;
-        shmid = shmget(SHARE_MEMORY_KEY, DMFSTotalSize + LOCALLOGSIZE + DISTRIBUTEDLOGSIZE, IPC_CREAT);
+        shmid = shmget(SHARE_MEMORY_KEY, DMFSTotalSize + LOCALLOGSIZE + DISTRIBUTEDLOGSIZE, IPC_CREAT|0660);
         if (shmid == -1) {
-            perror("shmget error")
+            perror("shmget error");
         }
         shmptr = shmat(shmid, 0, 0);
         if (shmptr == (void *)(-1)) {
-            Debug::notifyError("shmat error");
+            perror("shmat error");
         }
         MemoryBaseAddress = (uint64_t)shmptr;
         memset((void *)MemoryBaseAddress, '\0', DMFSTotalSize + LOCALLOGSIZE + DISTRIBUTEDLOGSIZE);
