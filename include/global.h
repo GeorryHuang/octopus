@@ -54,7 +54,8 @@ typedef enum {                          /* Message enumerator. */
     MESSAGE_DOCOMMIT,
     MESSAGE_READDIRECTORYMETA,
     MESSAGE_INVALID,
-    ONVM_CREATE
+    ONVM_CREATE,
+    ONVM_DS_CREATE,
 } Message;
 
 typedef struct {                        /* Extra information structure. */
