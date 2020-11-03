@@ -544,7 +544,7 @@ void RdmaSocket::RdmaListen() {
 	MyAddress.sin_addr.s_addr=INADDR_ANY;
 	MyAddress.sin_port=htons(ServerPort);
 
-    cout<<"Listening RDMA address:"<<MyAddress.sin_addr<<":"<<MyAddress.sin_port<<endl;
+    cout<<"Listening RDMA address:"<<inet_aton(MyAddress.sin_addr)<<":"<<MyAddress.sin_port<<endl;
 	if ((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 		Debug::debugItem("Socket creation failed");
 	}
@@ -638,7 +638,7 @@ int RdmaSocket::SocketConnect(uint16_t NodeID) {
 	int t = 3;
 	while (t >= 0 && connect(sock, (struct sockaddr *)&RemoteAddress, sizeof(struct sockaddr)) < 0) {
 		Debug::notifyError("Fail to connect to the server");
-        cout<<"Remote Address is "<<RemoteAddress.sin_addr<<":"<<RemoteAddress.sin_port<<endl;
+        cout<<"Remote Address is "<<inet_aton(RemoteAddress.sin_addr)<<":"<<RemoteAddress.sin_port<<endl;
         perror("connect error")
 		t -= 1;
 		usleep(1000000);
