@@ -165,7 +165,9 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 	if (send->message == MESSAGE_DISCONNECT) {
         //rdma->disconnect(send->sourceNodeID);
         return;
-    } else if (send->message == MESSAGE_TEST) {
+    } else if (send->message == ONVM_CREATE) {
+		cout<<"create message recv!"<<endl;
+	}else if (send->message == MESSAGE_TEST) {
     	;
     } else if (send->message == MESSAGE_UPDATEMETA) {
     	/* Write unlock. */

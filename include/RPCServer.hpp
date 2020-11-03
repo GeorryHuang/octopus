@@ -37,9 +37,9 @@ private:
 	vector<RPCTask*> tasks;
 	bool UnlockWait;
 	void Worker(int id);
+public:
 	void ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_t offset);
 	void ProcessQueueRequest();
-public:
 	RPCServer(int cqSize);
 	RdmaSocket* getRdmaSocketInstance();
 	MemoryManager* getMemoryManagerInstance();
