@@ -637,6 +637,8 @@ int RdmaSocket::SocketConnect(uint16_t NodeID) {
 	int t = 3;
 	while (t >= 0 && connect(sock, (struct sockaddr *)&RemoteAddress, sizeof(struct sockaddr)) < 0) {
 		Debug::notifyError("Fail to connect to the server");
+        cout<<"Remote Address is "<<RemoteAddress.sin_addr<<":"<<RemoteAddress.sin_port<<endl;
+        perror("connect error")
 		t -= 1;
 		usleep(1000000);
 	}
