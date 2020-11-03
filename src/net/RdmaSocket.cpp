@@ -18,7 +18,6 @@ mm(_mm), mmSize(_mmSize), conf(_conf), MaxNodeID(1), Mode(_Mode) {
 	/* Find my IP, and initialize my NodeID (At server side). */
 	/* NodeID at client side will be given on connection */
     ServerCount = conf->getServerCount();
-    Debug::notifyInfo("ServerCount = %d", ServerConnect);
     MaxNodeID = ServerCount + 1;
 	if (isServer) {
 		char hname[128];
@@ -669,7 +668,7 @@ void RdmaSocket::ONVMConnect(uint16_t nodeId)
     }
     PeerSockData *peer = (PeerSockData *)malloc(sizeof(PeerSockData));
     peer->sock = sock;
-    peer->NodeId = nodeId;
+    peer->NodeID = nodeId;
     if (ConnectQueuePair(peer) == false)
     {
         Debug::notifyError("RDMA connect with error");

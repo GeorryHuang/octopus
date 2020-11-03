@@ -120,7 +120,7 @@ private:
 	void ServerConnect();
 	bool DataTransferWorker(int id);
 public:
-	void RdmaSocket::ONVMConnect(uint16_t nodeId);
+	void ONVMConnect(uint16_t nodeId);
 	struct ibv_mr			*mr;			/* Memory registration handler */
 	RdmaSocket(int _cqNum, uint64_t _mm, uint64_t _mmSize, Configuration* _conf, bool isServer, uint8_t Mode);
 	~RdmaSocket();
