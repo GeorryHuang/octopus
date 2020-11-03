@@ -1,4 +1,5 @@
 #include "mempool.hpp"
+#include "error.h"
 
 MemoryManager::MemoryManager(uint64_t _mm, uint64_t _ServerCount,  int _DataSize)
 : ServerCount(_ServerCount), MemoryBaseAddress(_mm) {
@@ -16,7 +17,7 @@ MemoryManager::MemoryManager(uint64_t _mm, uint64_t _ServerCount,  int _DataSize
         DMFSTotalSize += SERVER_MASSAGE_SIZE * SERVER_MASSAGE_NUM * ServerCount;
         shmid = shmget(SHARE_MEMORY_KEY, DMFSTotalSize + LOCALLOGSIZE + DISTRIBUTEDLOGSIZE, IPC_CREAT);
         if (shmid == -1) {
-            Debug::notifyError("shmget error");
+            perror("shmget error")
         }
         shmptr = shmat(shmid, 0, 0);
         if (shmptr == (void *)(-1)) {
