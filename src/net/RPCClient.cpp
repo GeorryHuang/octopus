@@ -118,8 +118,8 @@ uint64_t RPCClient::ContractSendBuffer(GeneralSendBuffer *send) {
 }
 
 
-int main(){
-	RPCClient rpcClient;
-	rpcClient.RdmaCall(1, );
-	return 0;
-}
+//int main(){
+//	RPCClient rpcClient;
+//	rpcClient.RdmaCall(1, );
+//	return 0;
+//}

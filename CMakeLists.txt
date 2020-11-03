@@ -30,11 +30,16 @@ link_libraries(${CRYPTO_LIBRARIES}  ${CMAKE_DL_LIBS} )
 set(FS_SRC ${PROJECT_SOURCE_DIR}/src/fs)
 set(NET_SRC ${PROJECT_SOURCE_DIR}/src/net)
 set(TOOLS_SRC ${PROJECT_SOURCE_DIR}/src/tools)
+set(ONVM_SRC ${PROJECT_SOURCE_DIR}/src/fs/ccy_server.cpp)
 
 # Build server
 file(GLOB_RECURSE SERVER_SRC ${FS_SRC}/*.cpp ${FS_SRC}/*.c ${NET_SRC}/*.cpp ${TOOLS_SRC}/*.cpp)
 add_executable(dmfs ${SERVER_SRC})
 target_link_libraries(dmfs Threads::Threads)
+
+#file(GLOB_RECURSE SERVER_SRC ${OVNM_SRC}/*.cpp  ${NET_SRC}/*.cpp ${TOOLS_SRC}/*.cpp)
+#add_executable(metaServer ${SERVER_SRC})
+#target_link_libraries(metaServer Threads::Threads)
 
 # Build client library
 find_package(JNI)

@@ -118,11 +118,11 @@ public:
     }
     ~SegmentPool()
     {
-        for(auto iter : this->segment_map){
-            if(iter!=segment_map.end()){
-               delete iter->second; 
-            }
-        }
+        //for(auto iter : this->segment_map){
+        //    if(iter!=segment_map.end()){
+        //       delete iter->second; 
+        //    }
+        //}
     }
 };
 

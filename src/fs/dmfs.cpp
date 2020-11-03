@@ -1,8 +1,8 @@
-#include "RPCServer.hpp"
+#include "MetaServer.hpp"
 #include <sys/wait.h>  
 #include <sys/types.h>
 
-RPCServer *server;
+MetaServer *server;
 
 /* Catch ctrl-c and destruct. */
 void Stop (int signo) {
@@ -12,7 +12,8 @@ void Stop (int signo) {
 }
 int main() {
     signal(SIGINT, Stop);
-    server = new RPCServer(2);
+    server = new MetaServer(2);
+    cout<<"??"<<endl;
     char *p = (char *)server->getMemoryManagerInstance()->getDataAddress();
     while (true) {
     	getchar();
