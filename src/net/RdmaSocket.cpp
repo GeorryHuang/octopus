@@ -647,6 +647,43 @@ int RdmaSocket::SocketConnect(uint16_t NodeID) {
 	return sock;
 }
 
+/**
+ * This function used only for ONVM
+ * 0 is DS
+ * 1 is MS
+ * 2 is Client
+ * 
+*/
+void RdmaSocket::ONVMConnect(uint16_t nodeId)
+{
+    /* Connect to other servers. */
+    auto id2ip = conf->getInstance();
+    auto findRet = id2ip.find(nodeId);
+    string ip = findRet->second;
+    SocketConnect(nodeId);
+    int sock = SocketConnect(nodeId);
+    if (sock < 0)
+    {
+        Debug::notifyError("Socket connection failed to servers");
+        return;
+    }
+    PeerSockData *peer = (PeerSockData *)malloc(sizeof(PeerSockData));
+    peer->sock = sock;
+    peer->NodeId = nodeId;
+    if (ConnectQueuePair(peer) == false)
+    {
+        Debug::notifyError("RDMA connect with error");
+        return;
+    }
+    else
+    {
+        //SyncTool(peer->NodeID);
+        peers[peer->NodeID] = peer;
+        peer->counter = 0;
+        Debug::debugItem("Finished Connecting to Node%d", peer->NodeID);
+    }
+}
+
 void RdmaSocket::RdmaConnect() {
 	int sock;
 	/* Connect to Node 1 firstly to get clientID. */
