@@ -1,5 +1,6 @@
 #include "mempool.hpp"
 #include "error.h"
+#include<iostream>
 
 MemoryManager::MemoryManager(uint64_t _mm, uint64_t _ServerCount,  int _DataSize)
 : ServerCount(_ServerCount), MemoryBaseAddress(_mm) {
@@ -18,10 +19,12 @@ MemoryManager::MemoryManager(uint64_t _mm, uint64_t _ServerCount,  int _DataSize
         shmid = shmget(SHARE_MEMORY_KEY, DMFSTotalSize + LOCALLOGSIZE + DISTRIBUTEDLOGSIZE, IPC_CREAT|0660);
         if (shmid == -1) {
             perror("shmget error");
+            cout<<errno<<endl;
         }
         shmptr = shmat(shmid, 0, 0);
         if (shmptr == (void *)(-1)) {
             perror("shmat error");
+            cout<<errno<<endl;
         }
         MemoryBaseAddress = (uint64_t)shmptr;
         memset((void *)MemoryBaseAddress, '\0', DMFSTotalSize + LOCALLOGSIZE + DISTRIBUTEDLOGSIZE);

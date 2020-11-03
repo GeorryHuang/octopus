@@ -13,6 +13,8 @@ void Stop (int signo) {
 int main() {
     signal(SIGINT, Stop);
     server = new RPCServer(2);
+    //connect DS
+    server->getRdmaSocketInstance()->ONVMConnect(0);
     char *p = (char *)server->getMemoryManagerInstance()->getDataAddress();
     // void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_t offset) {
     uint64_t bufferRecv = server->getMemoryManagerInstance()->getClientMessageAddress(0);

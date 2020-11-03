@@ -15,7 +15,7 @@ int main() {
     signal(SIGINT, Stop);
     server = new RPCServer(2);
     while(true){
-        sleep(1);
-        cout<<"DS running"
+        sleep(5);
+        cout<<"DS running"<<endl;
     }
 }
