@@ -544,6 +544,7 @@ void RdmaSocket::RdmaListen() {
 	MyAddress.sin_addr.s_addr=INADDR_ANY;
 	MyAddress.sin_port=htons(ServerPort);
 
+    cout<<"Listening RDMA address:"<<MyAddress.sin_addr<<":"<<MyAddress.sin_port<<endl;
 	if ((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 		Debug::debugItem("Socket creation failed");
 	}
@@ -661,7 +662,6 @@ void RdmaSocket::ONVMConnect(uint16_t nodeId)
     auto id2ip = conf->getInstance();
     auto findRet = id2ip.find(nodeId);
     string ip = findRet->second;
-    SocketConnect(nodeId);
     int sock = SocketConnect(nodeId);
     if (sock < 0)
     {
