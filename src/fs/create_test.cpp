@@ -15,7 +15,7 @@ int main() {
     server = new RPCServer(2);
     char *p = (char *)server->getMemoryManagerInstance()->getDataAddress();
     // void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_t offset) {
-    uint64_t bufferRecv = server->getMemoryManagerInstance()->getClientMessageAddress();
+    uint64_t bufferRecv = server->getMemoryManagerInstance()->getClientMessageAddress(0);
     GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
     send->message = ONVM_CREATE;
     server->ProcessRequest(send, 0 , 0);

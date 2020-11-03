@@ -166,8 +166,14 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
         //rdma->disconnect(send->sourceNodeID);
         return;
     } else if (send->message == ONVM_CREATE) {
-		cout<<"create message recv!"<<endl;
-	}else if (send->message == MESSAGE_TEST) {
+		// bool RdmaSocket::RdmaWrite(uint16_t NodeID, uint64_t SourceBuffer, uint64_t DesBuffer, uint64_t BufferSize, uint32_t imm, int TaskID) 
+		cout<<"receive ONVM_CREATE, sending create message to DS"<<endl;
+		ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
+		send->message = ONVM_DS_CREATE;
+		socket->RdmaWrite(0, (uint64_t)send, 2*4096, bufferSend->size, -1, 1);
+	} else if (send->message == ONVM_DS_CREATE){
+		cout<<"DS received create"<<endl;
+	} else if (send->message == MESSAGE_TEST) {
     	;
     } else if (send->message == MESSAGE_UPDATEMETA) {
     	/* Write unlock. */
