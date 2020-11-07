@@ -86,8 +86,10 @@ void RPCServer::RequestPoller(int id) {
 			socket->RdmaReceive(2, mm + 2 * 4096, 0);
 			Debug::debugItem("Path = %s, size = %x, offset = %x", send->path, send->size, send->offset);
 		}*/
+		Debug::debugItem("PoolOnce <=0!");
 		return;
 	} else if (wc[0].opcode == IBV_WC_RECV_RDMA_WITH_IMM) {
+		Debug::debugItem("IBV_WC_RECV_RDMA_WITH_IMM");
 		NodeID = wc[0].imm_data >> 20;
 		if (NodeID == 0XFFF) {
 			/* Unlock request, process it directly. */
@@ -142,6 +144,8 @@ void RPCServer::RequestPoller(int id) {
 			}
 		}
 		
+	}else{
+		Debug::debugItem("PollOnce others");
 	}
 }
 

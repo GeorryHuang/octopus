@@ -313,7 +313,7 @@ bool RdmaSocket::ModifyQPtoRTR(struct ibv_qp *qp, uint32_t remote_qpn, uint16_t 
     }
     rc = ibv_modify_qp(qp, &attr, flags);
     if (rc) {
-        perror("modify QP state to RTR failed!")
+        perror("modify QP state to RTR failed!");
         cout<<errno<<endl;
    		return false;
     }
@@ -419,11 +419,11 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
         goto ConnectQPExit;
 	}
 
-    cout<<"Remote rkey:"<<RemoteMeta.rkey<<endl
+    cout<<"Remote rkey:"<<RemoteMeta.rkey<<endl;
     cout<<"Remote qpNum[0]"<<RemoteMeta.qpNum[0]<<endl;
     cout<<"Remote lid"<<RemoteMeta.lid<<endl;
     for(int i=0;i<16;i++){
-        printf("%X",gid[i])
+        printf("%X",RemoteMeta.gid[i]);
     }
     printf("\n");
     cout<<"Remote RegisteredMemory"<<RemoteMeta.RegisteredMemory<<endl;
