@@ -170,6 +170,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 		cout<<"receive ONVM_CREATE, sending create message to DS"<<endl;
 		ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
 		send->message = ONVM_DS_CREATE;
+		soc
 		socket->RdmaWrite(0, (uint64_t)send, 2*4096, bufferSend->size, -1, 1);
 	} else if (send->message == ONVM_DS_CREATE){
 		cout<<"DS received create"<<endl;
