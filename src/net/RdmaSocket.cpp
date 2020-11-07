@@ -213,32 +213,36 @@ bool RdmaSocket::CreateQueuePair(PeerSockData *peer, int offset) {
     }
     attr.sq_sig_all = 0;
 
-    if (isServer && peer->NodeID > 0 && peer->NodeID <= ServerCount) {
-        /* Server interconnect, use cq at 0. */
-        attr.send_cq = cq[0];
-        attr.recv_cq = cq[0];
-        peer->cq = cq[0];
-    } else if (isServer) {
+    // if (isServer && peer->NodeID > 0 && peer->NodeID <= ServerCount) {
+    //     /* Server interconnect, use cq at 0. */
+    //     attr.send_cq = cq[0];
+    //     attr.recv_cq = cq[0];
+    //     peer->cq = cq[0];
+    // } else if (isServer) {
         /* Connection between server and client. */
-	if (offset == 0) {
+	// if (offset == 0) {
  		/* Each client will create two qps, we use same cq at server side. */
-		cqPtr += 1;
-		if (cqPtr >= cqNum)
-			cqPtr = 1;
-	}
-        attr.send_cq = cq[cqPtr];
-        attr.recv_cq = cq[cqPtr];
-        peer->cq = cq[cqPtr];
-    } else if (!isServer) {
+	// 	cqPtr += 1;
+	// 	if (cqPtr >= cqNum)
+	// 		cqPtr = 1;
+	// }
+    //     attr.send_cq = cq[cqPtr];
+    //     attr.recv_cq = cq[cqPtr];
+    //     peer->cq = cq[cqPtr];
+    // } else if (!isServer) {
         /* Client only have one CQ, so never change. */
-        attr.send_cq = cq[cqPtr];
-        attr.recv_cq = cq[cqPtr];
-        peer->cq = cq[cqPtr];
-        cqPtr += 1;
-        if (cqPtr >= cqNum) {
-            cqPtr = 0;
-        } 
-    }
+        // attr.send_cq = cq[cqPtr];
+        // attr.recv_cq = cq[cqPtr];
+        // peer->cq = cq[cqPtr];
+        // cqPtr += 1;
+        // if (cqPtr >= cqNum) {
+        //     cqPtr = 0;
+        // } 
+    // }
+
+    attr.send_cq = cq[0];
+    attr.recv_cq = cq[0];
+    peer->cq = cq[0];
 
     attr.cap.max_send_wr = QPS_MAX_DEPTH;
     attr.cap.max_recv_wr = QPS_MAX_DEPTH;
@@ -380,11 +384,11 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
     //     LocalID.GivenID = 0;
     // }
   /* Change NodeID first */
-    if (DataSyncwithSocket(peer->sock, sizeof(ExchangeID), (char *)&LocalID, (char *)&RemoteID) < 0) {
-        Debug::notifyError("failed to exchange connection data between sides");
-        rc = 1;
-        goto ConnectQPExit;
-    }
+    // if (DataSyncwithSocket(peer->sock, sizeof(ExchangeID), (char *)&LocalID, (char *)&RemoteID) < 0) {
+    //     Debug::notifyError("failed to exchange connection data between sides");
+    //     rc = 1;
+    //     goto ConnectQPExit;
+    // }
 
 
     // if (isServer && RemoteID.isServer) {
@@ -400,13 +404,13 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
     // }
 
 	CreateQueuePair(peer, 0);
-    CreateQueuePair(peer, 1);
+    // CreateQueuePair(peer, 1);
 
     // if (!isServer || (isServer && peer->NodeID > conf->getServerCount())) {
         /* Connection between server and client, create data channel. */
-        DoubleQP = true;
-        for (int i = 2; i < QP_NUMBER; i++)
-        CreateQueuePair(peer, i);
+        // DoubleQP = true;
+        // for (int i = 2; i < QP_NUMBER; i++)
+        // CreateQueuePair(peer, i);
     // }
     
 	if (GidIndex >= 0) {
@@ -421,11 +425,11 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
 
 	LocalMeta.rkey = mr->rkey;
 	LocalMeta.qpNum[0] = peer->qp[0]->qp_num;
-    LocalMeta.qpNum[1] = peer->qp[1]->qp_num;
-    if (DoubleQP) {
-        for (int i = 2; i < QP_NUMBER; i++)
-        LocalMeta.qpNum[i] = peer->qp[i]->qp_num;
-    }
+    // LocalMeta.qpNum[1] = peer->qp[1]->qp_num;
+    // if (DoubleQP) {
+    //     for (int i = 2; i < QP_NUMBER; i++)
+    //     LocalMeta.qpNum[i] = peer->qp[i]->qp_num;
+    // }
 	LocalMeta.lid = PortAttribute.lid;
 	LocalMeta.RegisteredMemory = mm;
 
@@ -439,6 +443,7 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
     cout<<"Remote rkey:"<<RemoteMeta.rkey<<endl;
     cout<<"Remote qpNum[0]"<<RemoteMeta.qpNum[0]<<endl;
     cout<<"Remote lid"<<RemoteMeta.lid<<endl;
+    printf("Remote gid:");
     for(int i=0;i<16;i++){
         printf("%X",RemoteMeta.gid[i]);
     }
@@ -453,8 +458,10 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
 	peer->RegisteredMemory = RemoteMeta.RegisteredMemory;
 
 	memcpy(peer->gid, RemoteMeta.gid, 16);
-    N = (DoubleQP) ? QP_NUMBER : 2;
-    for (int i = 0; i < N; i++) {
+    // N = (DoubleQP) ? QP_NUMBER : 2;
+    N = (DoubleQP) ? QP_NUMBER : 1;
+    int i = 0;
+    // for (int i = 0; i < N; i++) {
 
         /* modify the QP to init */
         ret = ModifyQPtoInit(peer->qp[i]);
@@ -479,7 +486,7 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
             rc = 1;
             goto ConnectQPExit;
         }
-    }
+    // }
     ConnectQPExit:
     if(rc != 0) {
     	return false;
@@ -593,7 +600,7 @@ void RdmaSocket::RdmaListen() {
 	
     Listener = thread(&RdmaSocket::RdmaAccept, this, sock);
     /* Connect to other servers. */
-    ServerConnect();
+    // ServerConnect();
 
 }
 
@@ -608,7 +615,7 @@ void RdmaSocket::RdmaAccept(int sock) {
         PeerSockData *peer = (PeerSockData *)malloc(sizeof(PeerSockData));
         peer->sock = fd;
         peer->counter = 0;
-        peer->NodeID = 0;
+        peer->NodeID = 1;
         if (ConnectQueuePair(peer) == false) {
             Debug::notifyError("RDMA connect with error");
         } else {
@@ -848,6 +855,7 @@ bool RdmaSocket::RdmaReceive(uint16_t NodeID, uint64_t SourceBuffer, uint64_t Bu
         Debug::notifyError("Receive with RDMA_RECV failed, ret = %d.", ret);
         return false;
     }
+    cout<<"ibv_post_recv Node:"<<NodeID<<endl;
 	return true;
 }
 
