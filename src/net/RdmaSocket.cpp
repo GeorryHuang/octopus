@@ -354,44 +354,61 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
     bool ret;
 	union ibv_gid MyGid;
     bool DoubleQP = false;
-    if (isServer) {
-        LocalID.NodeID = MyNodeID;
-        LocalID.isServer = true;
-        LocalID.GivenID = 0;
-        if (isServer && MyNodeID == 1) {
-            LocalID.GivenID = MaxNodeID;
-        }
-    } else {
-        LocalID.NodeID = MyNodeID;
+
+    if (peer->NodeID == 0 ){
+        //we are client
+        LocalID.NodeID = 1;
         LocalID.isServer = false;
         LocalID.GivenID = 0;
+    }else {
+        //we are server
+        LocalID.NodeID = 0;
+        LocalID.isServer = true;
+        LocalID.GivenID = 0;
     }
-    /* Change NodeID first */
+
+    // if (isServer) {
+    //     LocalID.NodeID = MyNodeID;
+    //     LocalID.isServer = true;
+    //     LocalID.GivenID = 0;
+    //     if (isServer && MyNodeID == 1) {
+    //         LocalID.GivenID = MaxNodeID;
+    //     }
+    // } else {
+    //     LocalID.NodeID = MyNodeID;
+    //     LocalID.isServer = false;
+    //     LocalID.GivenID = 0;
+    // }
+  /* Change NodeID first */
     if (DataSyncwithSocket(peer->sock, sizeof(ExchangeID), (char *)&LocalID, (char *)&RemoteID) < 0) {
         Debug::notifyError("failed to exchange connection data between sides");
         rc = 1;
         goto ConnectQPExit;
     }
-    if (isServer && RemoteID.isServer) {
-        /* A server is connecting to me, we are both servers. */
-        peer->NodeID = RemoteID.NodeID;
-    } else if (isServer && !RemoteID.isServer && MyNodeID != 1) {
-        peer->NodeID = RemoteID.NodeID;
-    } else if (isServer && !RemoteID.isServer && MyNodeID == 1) {
-        peer->NodeID = MaxNodeID;
-        MaxNodeID += 1;
-    } else if (!isServer && RemoteID.GivenID != 0) {
-        MyNodeID = RemoteID.GivenID;
-    }
+
+
+    // if (isServer && RemoteID.isServer) {
+    //     /* A server is connecting to me, we are both servers. */
+    //     peer->NodeID = RemoteID.NodeID;
+    // } else if (isServer && !RemoteID.isServer && MyNodeID != 1) {
+    //     peer->NodeID = RemoteID.NodeID;
+    // } else if (isServer && !RemoteID.isServer && MyNodeID == 1) {
+    //     peer->NodeID = MaxNodeID;
+    //     MaxNodeID += 1;
+    // } else if (!isServer && RemoteID.GivenID != 0) {
+    //     MyNodeID = RemoteID.GivenID;
+    // }
 
 	CreateQueuePair(peer, 0);
     CreateQueuePair(peer, 1);
-    if (!isServer || (isServer && peer->NodeID > conf->getServerCount())) {
+
+    // if (!isServer || (isServer && peer->NodeID > conf->getServerCount())) {
         /* Connection between server and client, create data channel. */
         DoubleQP = true;
         for (int i = 2; i < QP_NUMBER; i++)
         CreateQueuePair(peer, i);
-    }
+    // }
+    
 	if (GidIndex >= 0) {
 		rc = ibv_query_gid(ctx, Port, GidIndex, &MyGid);
         if (rc) {
@@ -591,6 +608,7 @@ void RdmaSocket::RdmaAccept(int sock) {
         PeerSockData *peer = (PeerSockData *)malloc(sizeof(PeerSockData));
         peer->sock = fd;
         peer->counter = 0;
+        peer->NodeID = 0;
         if (ConnectQueuePair(peer) == false) {
             Debug::notifyError("RDMA connect with error");
         } else {
@@ -602,6 +620,7 @@ void RdmaSocket::RdmaAccept(int sock) {
             }
 
             Debug::debugItem("Accepted to Node%d", peer->NodeID);
+            break;
         }
     }
 }
