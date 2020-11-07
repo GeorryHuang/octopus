@@ -1003,13 +1003,13 @@ bool RdmaSocket::RdmaWrite(uint16_t NodeID, uint64_t SourceBuffer, uint64_t DesB
     }
     wr.send_flags = IBV_SEND_SIGNALED;
     wr.wr.rdma.remote_addr = DesBuffer + peer->RegisteredMemory;
-    Debug::debugItem("Post RDMA_WRITE with remote address = %lx", wr.wr.rdma.remote_addr);
     wr.wr.rdma.rkey        = peer->rkey;
     if (ibv_post_send(peer->qp[TaskID], &wr, &wrBad)) {
         Debug::notifyError("Send with RDMA_WRITE(WITH_IMM) failed.");
         printf("%s\n", strerror(errno));
         return false;
     }
+    Debug::debugItem("Post RDMA_WRITE with remote address = %lx", wr.wr.rdma.remote_addr);
 	return true;
 }
 
@@ -1238,7 +1238,7 @@ int RdmaSocket::PollOnce(int cqPtr, int PollNumber, struct ibv_wc *wc) {
     int count = ibv_poll_cq(cq[cqPtr], PollNumber, wc);
     if (count == 0) {
         return 0;
-    } else if (count < 0) {
+    } else if (count < 0) { 
 	Debug::notifyError("Failure occurred when reading work completions, ret = %d", count);
 	return 0;
     }
