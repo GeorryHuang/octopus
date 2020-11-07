@@ -18,9 +18,10 @@ int main() {
     // void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_t offset) {
     // uint64_t bufferRecv = server->getMemoryManagerInstance()->getClientMessageAddress(0);
 	// bool RdmaSocket::RdmaWrite(uint16_t NodeID, uint64_t SourceBuffer, uint64_t DesBuffer, uint64_t BufferSize, uint32_t imm, int TaskID) 
+    uint64_t mm = 0;
     Configuration *conf = new Configuration();
     MemoryManager *mem = new MemoryManager(mm, conf->getServerCount(), 2);
-	uint64_t mm = mem->getDmfsBaseAddress();
+	mm = mem->getDmfsBaseAddress();
     RdmaSocket *socket = new RdmaSocket(2, mm, mem->getDmfsTotalSize(), conf, true, 0);
     socket->ONVMConnect(0);
 	cout<<"sending create message to DS"<<endl;
@@ -29,10 +30,11 @@ int main() {
     GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
     send->message = ONVM_CREATE;
 	ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
+    uint16_t NodeID = 0;
 	send->message = ONVM_DS_CREATE;
 		uint16_t offset = 0;
 		uint32_t imm = NodeID<<16 | offset;
 	socket->RdmaWrite(0, (uint64_t)send, 2*4096, bufferSend->size, imm, 1);
-    sleep(3600)
+    sleep(3600);
     // server->ProcessRequest(send, 0 , 0);
 }
