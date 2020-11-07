@@ -435,6 +435,8 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
             goto ConnectQPExit;
         }
         /* modify the QP to RTR */
+        cout<<"peer lid :"<<peer->lid<<endl;
+        cout<<"peer gid :"<<peer->gid<<endl;
         ret = ModifyQPtoRTR(peer->qp[i], peer->qpNum[i], peer->lid, peer->gid);
         if (ret == false) {
             Debug::notifyError("failed to modify QP state to RTR");
@@ -444,7 +446,7 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
         /* Modify the QP to RTS */
         ret = ModifyQPtoRTS(peer->qp[i]);
         if (ret == false) {
-            Debug::notifyError("failed to modify QP state to RTR");
+            Debug::notifyError("failed to modify QP state to RTS");
             rc = 1;
             goto ConnectQPExit;
         }
@@ -543,8 +545,9 @@ void RdmaSocket::RdmaListen() {
 	MyAddress.sin_family=AF_INET;
 	MyAddress.sin_addr.s_addr=INADDR_ANY;
 	MyAddress.sin_port=htons(ServerPort);
-
-    cout<<"Listening RDMA address:"<<inet_aton(MyAddress.sin_addr)<<":"<<MyAddress.sin_port<<endl;
+    cout<<"ServerPort:"<<ServerPort<<endl;
+    cout<<"htons(ServerPort)"<<htons(ServerPort)<<endl;
+    cout<<"Listening RDMA address:"<<inet_ntoa(MyAddress.sin_addr)<<":"<<MyAddress.sin_port<<endl;
 	if ((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 		Debug::debugItem("Socket creation failed");
 	}
@@ -579,6 +582,7 @@ void RdmaSocket::RdmaAccept(int sock) {
         if (ConnectQueuePair(peer) == false) {
             Debug::notifyError("RDMA connect with error");
         } else {
+            cout<<"Accepted?"<<endl;
             peers[peer->NodeID] = peer;
             Debug::notifyInfo("Client %d Joined Us", peer->NodeID);
             /* Rdma Receive in Advance. */
@@ -626,7 +630,8 @@ int RdmaSocket::SocketConnect(uint16_t NodeID) {
 	memset(&RemoteAddress, 0, sizeof(RemoteAddress));
 	RemoteAddress.sin_family = AF_INET;
 	inet_aton(conf->getIPbyID(NodeID).c_str(), (struct in_addr*)&RemoteAddress.sin_addr);
-	RemoteAddress.sin_port = htons(ServerPort);
+	// RemoteAddress.sin_port = htons(ServerPort);
+    RemoteAddress.sin_port = htons(ServerPort);
 	if ((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 		Debug::notifyError("Socket Creation Failed");
 		return -1;
@@ -638,7 +643,9 @@ int RdmaSocket::SocketConnect(uint16_t NodeID) {
 	int t = 3;
 	while (t >= 0 && connect(sock, (struct sockaddr *)&RemoteAddress, sizeof(struct sockaddr)) < 0) {
 		Debug::notifyError("Fail to connect to the server");
-        cout<<"Remote Address is "<<inet_aton(RemoteAddress.sin_addr)<<":"<<RemoteAddress.sin_port<<endl;
+        cout<<"ServerPort:"<<ServerPort<<endl;
+        cout<<"htons(ServerPort)"<<htons(ServerPort)<<endl;
+        cout<<"Remote Address is "<<inet_ntoa(RemoteAddress.sin_addr)<<":"<<RemoteAddress.sin_port<<endl;
         perror("connect error");
 		t -= 1;
 		usleep(1000000);
