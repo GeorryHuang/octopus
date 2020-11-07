@@ -460,8 +460,7 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
 	memcpy(peer->gid, RemoteMeta.gid, 16);
     // N = (DoubleQP) ? QP_NUMBER : 2;
     N = (DoubleQP) ? QP_NUMBER : 1;
-    int i = 0;
-    // for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++) {
 
         /* modify the QP to init */
         ret = ModifyQPtoInit(peer->qp[i]);
@@ -486,7 +485,7 @@ bool RdmaSocket::ConnectQueuePair(PeerSockData *peer) {
             rc = 1;
             goto ConnectQPExit;
         }
-    // }
+    }
     ConnectQPExit:
     if(rc != 0) {
     	return false;
@@ -855,7 +854,6 @@ bool RdmaSocket::RdmaReceive(uint16_t NodeID, uint64_t SourceBuffer, uint64_t Bu
         Debug::notifyError("Receive with RDMA_RECV failed, ret = %d.", ret);
         return false;
     }
-    cout<<"ibv_post_recv Node:"<<NodeID<<endl;
 	return true;
 }
 
