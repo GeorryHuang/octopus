@@ -22,6 +22,7 @@ RPCServer::RPCServer(int _cqSize) :cqSize(_cqSize) {
     //          socket->getNodeID());
 	//fs->rootInitialize(socket->getNodeID());
 	wk = new thread[cqSize]();
+	testCount = 0;
 	for (int i = 0; i < cqSize; i++)
 		wk[i] = thread(&RPCServer::Worker, this, i);
 }
@@ -109,10 +110,10 @@ void RPCServer::RequestPoller(int id) {
 		// }
 		uint16_t NodeID = 1;
 		bufferRecv = mem->getDmfsBaseAddress() + NodeID * CLIENT_MESSAGE_SIZE ; 
-		cout<<"The bufferRecv address:"<<bufferRecv<<endl;
+		// cout<<"The bufferRecv address:"<<bufferRecv<<endl;
 
 		GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
-		cout<<"message:"<<send->message<<endl;
+		// cout<<"message:"<<send->message<<endl;
 		switch (send->message) {
 			case MESSAGE_TEST: {
 
@@ -182,7 +183,15 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 		uint32_t imm = NodeID<<16 | offset;
 		socket->RdmaWrite(0, (uint64_t)send, 2*4096, bufferSend->size, imm, 1);
 	} else if (send->message == ONVM_DS_CREATE){
-		cout<<"DS received create"<<endl;
+		// cout<<"DS received create"<<endl;
+		testCount++;
+		if(testCount==1){
+			Debug.startTimer("TestCreate");
+		}
+		if(testCount == 5000000){
+			Debug.endTimer();
+			exit(0);
+		}
 		socket->RdmaReceive(1, mm +  4096, 4096);
 		return;
 	} else if (send->message == MESSAGE_TEST) {
