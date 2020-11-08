@@ -26,7 +26,7 @@ int main() {
     RdmaSocket *socket = new RdmaSocket(2, mm, mem->getDmfsTotalSize(), conf, true, 0);
     socket->ONVMConnect(0);
 	cout<<"sending create message to DS"<<endl;
-    uint64_t bufferRecv = mem->getClientMessageAddress(0);
+    uint64_t bufferRecv = mem->getDmfsBaseAddress();
     cout<<"sendding message start from:"<<bufferRecv<<endl;
     GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
 	ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
