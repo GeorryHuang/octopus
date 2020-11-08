@@ -109,8 +109,10 @@ void RPCServer::RequestPoller(int id) {
 		// }
 		uint16_t NodeID = 1;
 		bufferRecv = mem->getDmfsBaseAddress + NodeID * CLIENT_MESSAGE_SIZE ; 
+		cout<<"The bufferRecv address:"<<bufferRecv<<endl;
 
 		GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
+		cout<<"message:"<<send->message<<endl;
 		switch (send->message) {
 			case MESSAGE_TEST: {
 
