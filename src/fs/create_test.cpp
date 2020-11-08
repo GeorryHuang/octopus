@@ -30,6 +30,7 @@ int main() {
     cout<<"sendding message start from:"<<bufferRecv<<endl;
     GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
 	ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
+    bufferSend->size = sizeof(ExtentReadSendBuffer);
     uint16_t NodeID = 1;
 	send->message = ONVM_DS_CREATE;
 		uint16_t offset = 0;
