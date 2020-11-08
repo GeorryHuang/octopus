@@ -183,7 +183,8 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 		socket->RdmaWrite(0, (uint64_t)send, 2*4096, bufferSend->size, imm, 1);
 	} else if (send->message == ONVM_DS_CREATE){
 		cout<<"DS received create"<<endl;
-		exit(-1);
+		socket->RdmaReceive(1, mm +  4096, 4096);
+		return;
 	} else if (send->message == MESSAGE_TEST) {
     	;
     } else if (send->message == MESSAGE_UPDATEMETA) {
