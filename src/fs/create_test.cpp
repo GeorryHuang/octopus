@@ -27,14 +27,14 @@ int main() {
     socket->ONVMConnect(0);
 	cout<<"sending create message to DS"<<endl;
     uint64_t bufferRecv = mem->getClientMessageAddress(0);
-
+    cout<<"sendding message start from:"<<bufferRecv<<endl;
     GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
-    send->message = ONVM_CREATE;
 	ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
     uint16_t NodeID = 1;
 	send->message = ONVM_DS_CREATE;
 		uint16_t offset = 0;
 		uint32_t imm = NodeID<<16 | offset;
+    cout<<"sending message is :"<<send->message<<endl;
 	socket->RdmaWrite(0, (uint64_t)send, NodeID * CLIENT_MESSAGE_SIZE, bufferSend->size, imm, 0);
     struct ibv_wc wc;
     socket->PollCompletion(0, 1, &wc);
