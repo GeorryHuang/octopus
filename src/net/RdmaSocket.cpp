@@ -168,7 +168,7 @@ bool RdmaSocket::CreateResources() {
 
     /* register the memory buffer */
     Debug::notifyInfo("Register Memory Region");
-    
+    cout<<"MemoryRegion start from :"<<mm<<"MemoryRegion size:"<<mmSize<<endl;
     mr = ibv_reg_mr(pd, (void*)mm, mmSize, mrFlags);
     if (mr == NULL) {
         Debug::notifyError("Memory registration failed");
