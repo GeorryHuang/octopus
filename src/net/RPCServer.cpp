@@ -89,24 +89,27 @@ void RPCServer::RequestPoller(int id) {
 		return;
 	} else if (wc[0].opcode == IBV_WC_RECV_RDMA_WITH_IMM) {
 		Debug::debugItem("IBV_WC_RECV_RDMA_WITH_IMM");
-		NodeID = wc[0].imm_data >> 20;
-		if (NodeID == 0XFFF) {
-			/* Unlock request, process it directly. */
-			// uint64_t hashAddress = wc[0].imm_data & 0x000FFFFF;
-			// fs->unlockWriteHashItem(0, 0, hashAddress);
-			return;
-		}
-		NodeID = (uint16_t)(wc[0].imm_data << 16 >> 16);
-		offset = (uint16_t)(wc[0].imm_data >> 16);
-		Debug::debugItem("NodeID = %d, offset = %d", NodeID, offset);
-		count += 1;
-		if (NodeID > 0 && NodeID <= ServerCount) {
-			/* Recv Message From Other Server. */
-			bufferRecv = mem->getServerRecvAddress(NodeID, offset);
-		} else if (NodeID > ServerCount) {
-			/* Recv Message From Client. */
-			bufferRecv = mem->getClientMessageAddress(NodeID);
-		}
+		// NodeID = wc[0].imm_data >> 20;
+		// if (NodeID == 0XFFF) {
+		// 	/* Unlock request, process it directly. */
+		// 	// uint64_t hashAddress = wc[0].imm_data & 0x000FFFFF;
+		// 	// fs->unlockWriteHashItem(0, 0, hashAddress);
+		// 	return;
+		// }
+		// NodeID = (uint16_t)(wc[0].imm_data << 16 >> 16);
+		// offset = (uint16_t)(wc[0].imm_data >> 16);
+		// Debug::debugItem("NodeID = %d, offset = %d", NodeID, offset);
+		// count += 1;
+		// if (NodeID > 0 && NodeID <= ServerCount) {
+		// 	/* Recv Message From Other Server. */
+		// 	bufferRecv = mem->getServerRecvAddress(NodeID, offset);
+		// } else if (NodeID > ServerCount) {
+		// 	/* Recv Message From Client. */
+			// bufferRecv = mem->getClientMessageAddress(NodeID);
+		// }
+		uint16_t NodeID = 1;
+		bufferRecv = mem->getClientMessageAddress(NodeID);
+
 		GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
 		switch (send->message) {
 			case MESSAGE_TEST: {
@@ -178,6 +181,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 		socket->RdmaWrite(0, (uint64_t)send, 2*4096, bufferSend->size, imm, 1);
 	} else if (send->message == ONVM_DS_CREATE){
 		cout<<"DS received create"<<endl;
+		exit(-1);
 	} else if (send->message == MESSAGE_TEST) {
     	;
     } else if (send->message == MESSAGE_UPDATEMETA) {

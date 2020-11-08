@@ -1,6 +1,7 @@
 #include "RPCServer.hpp"
 #include <sys/wait.h>  
 #include <sys/types.h>
+#include "global.h"
 
 RPCServer *server;
 
@@ -30,11 +31,11 @@ int main() {
     GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
     send->message = ONVM_CREATE;
 	ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
-    uint16_t NodeID = 0;
+    uint16_t NodeID = 1;
 	send->message = ONVM_DS_CREATE;
 		uint16_t offset = 0;
 		uint32_t imm = NodeID<<16 | offset;
-	socket->RdmaWrite(0, (uint64_t)send, 1 * 4096, bufferSend->size, imm, 1);
+	socket->RdmaWrite(0, (uint64_t)send, NodeID * CLIENT_MESSAGE_SIZE, bufferSend->size, imm, 0);
     struct ibv_wc wc;
     socket->PollCompletion(0, 1, &wc);
     
