@@ -35,6 +35,8 @@ int main() {
 		uint16_t offset = 0;
 		uint32_t imm = NodeID<<16 | offset;
 	socket->RdmaWrite(0, (uint64_t)send, 2*4096, bufferSend->size, imm, 1);
-    sleep(3600);
+    struct ibv_wc wc;
+    socket->PollCompletion(0, 1, &wc);
+    
     // server->ProcessRequest(send, 0 , 0);
 }

@@ -1023,6 +1023,7 @@ bool RdmaSocket::RdmaWrite(uint16_t NodeID, uint64_t SourceBuffer, uint64_t DesB
     if((int32_t)imm == -1) {
         wr.opcode     = IBV_WR_RDMA_WRITE;
     } else {
+        cout<<"send with IMM"<<endl;
         wr.opcode     = IBV_WR_RDMA_WRITE_WITH_IMM;
         wr.imm_data   = imm;
     }
