@@ -186,10 +186,10 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 		// cout<<"DS received create"<<endl;
 		testCount++;
 		if(testCount==1){
-			Debug.startTimer("TestCreate");
+			Debug::startTimer("TestCreate");
 		}
 		if(testCount == 5000000){
-			Debug.endTimer();
+			Debug::endTimer();
 			exit(0);
 		}
 		socket->RdmaReceive(1, mm +  4096, 4096);
