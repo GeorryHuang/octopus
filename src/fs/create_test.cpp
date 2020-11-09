@@ -40,8 +40,10 @@ int main()
     cout << "sending message is :" << send->message << endl;
 
 
-    thread threads[4];
-    thread(&hzy_test, i);
+    thread threads[test_thread_count];
+    for(int i=0;i<test_thread_count;i++){
+        thread(&hzy_test, i);
+    }
     while(true);
     
 

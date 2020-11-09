@@ -187,7 +187,7 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 		uint16_t offset = 0;
 		uint32_t imm = NodeID<<16 | offset;
 		bool shouldStop = false;
-		for (int i=0;i<4;i++){
+		for (int i=0;i<test_thread_count;i++){
 			if(testCount[i]!=5000000){
 				shouldStop = false;
 				break;

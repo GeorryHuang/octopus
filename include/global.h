@@ -16,6 +16,7 @@ static inline uint32_t gettid() {
     return (uint32_t)syscall(SYS_gettid);
 }
 
+#define test_thread_count 4
 #define MAX_CLIENT_NUMBER   1024
 #define CLIENT_MESSAGE_SIZE 4096
 #define SERVER_MASSAGE_SIZE CLIENT_MESSAGE_SIZE
