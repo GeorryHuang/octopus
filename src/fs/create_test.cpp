@@ -24,10 +24,10 @@ void Stop(int signo)
 }
 
 
-void hzy_test(int i){
+void hzy_test(int thread_num){
 for (int i = 0; i < 5000000; i++)
     {
-        A::socket->RdmaWrite(0, (uint64_t)A::send, A::NodeID * CLIENT_MESSAGE_SIZE, A::bufferSend->size, A::imm, 0);
+        A::socket->RdmaWrite(0, (uint64_t)A::send + thread_num * A::bufferSend->size , thread_num * A::bufferSend->size, A::bufferSend->size, A::imm, 0);
         struct ibv_wc wc;
         A::socket->PollCompletion(0, 1, &wc);
     }
