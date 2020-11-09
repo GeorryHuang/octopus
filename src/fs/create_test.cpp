@@ -2,7 +2,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include "global.h"
-namespace{
+namespace A{
 RPCServer *server;
 RdmaSocket *socket;
 uint32_t imm;
@@ -24,8 +24,10 @@ for (int i = 0; i < 5000000; i++)
     }
     cout<<"Thread "<<i<<" Done!"<<endl;
 }
+using namespace A;
 int main()
 {
+    
     signal(SIGINT, Stop);
     // server = new RPCServer(2);
     //connect DS
