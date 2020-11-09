@@ -31,7 +31,7 @@ for (int i = 0; i < 5000000; i++)
         struct ibv_wc wc;
         A::socket->PollCompletion(0, 1, &wc);
     }
-    cout<<"Thread "<<i<<" Done!"<<endl;
+    cout<<"Thread "<<thread_num<<" Done!"<<endl;
     A::total++;
     if(A::total == test_thread_count){
         Stop(0);
@@ -56,7 +56,7 @@ int main()
     A::socket = new RdmaSocket(2, mm, mem->getDmfsTotalSize(), conf, true, 0);
     A::socket->ONVMConnect(0);
     cout << "sending create message to DS" << endl;
-    uint64_t bufferRecv = mem->getDmfsBaseAddress();
+    uint64_t bufferRecv = mem->getDmfsBaseAddress() + 2 * 4096;
     cout << "sendding message start from:" << bufferRecv << endl;
     A::send = (GeneralSendBuffer *)bufferRecv;
     A::bufferSend = (ExtentReadSendBuffer *)A::send;
