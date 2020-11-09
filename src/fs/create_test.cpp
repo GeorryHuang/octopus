@@ -39,12 +39,21 @@ int main()
     uint32_t imm = NodeID << 16 | offset;
     cout << "sending message is :" << send->message << endl;
 
-    for (int i = 0; i < 5000000; i++)
+
+    thread threads[4];
+    thread(&hzy_test, i);
+    while(true);
+    
+
+    // server->ProcessRequest(send, 0 , 0);
+}
+
+void hzy_test(int i){
+for (int i = 0; i < 5000000; i++)
     {
         socket->RdmaWrite(0, (uint64_t)send, NodeID * CLIENT_MESSAGE_SIZE, bufferSend->size, imm, 0);
         struct ibv_wc wc;
         socket->PollCompletion(0, 1, &wc);
     }
-
-    // server->ProcessRequest(send, 0 , 0);
+    cout<<"Thread "<<i<<" Done!"<<endl;
 }

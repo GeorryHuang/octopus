@@ -240,9 +240,9 @@ bool RdmaSocket::CreateQueuePair(PeerSockData *peer, int offset) {
         // } 
     // }
 
-    attr.send_cq = cq[0];
-    attr.recv_cq = cq[0];
-    peer->cq = cq[0];
+    attr.send_cq = cq[offset];
+    attr.recv_cq = cq[offset];
+    peer->cq = cq[offset];
 
     attr.cap.max_send_wr = QPS_MAX_DEPTH;
     attr.cap.max_recv_wr = QPS_MAX_DEPTH;

@@ -32,7 +32,7 @@
 #define MAX_POST_LIST 24
 #define QPS_MAX_DEPTH 128
 #define SIGNAL_BATCH  31
-#define WORKER_NUMBER 2
+#define WORKER_NUMBER 4
 #define QP_NUMBER 	  (1 + WORKER_NUMBER)
 
 /* Important information of node-to-node connection */
@@ -99,6 +99,7 @@ private:
 	Queue<TransferTask *>   queue[WORKER_NUMBER];/* Used for Data transfer. */
 	uint16_t TransferSignal;				/* Used to notify compeletion of data transfer. */
 	thread 					worker[WORKER_NUMBER];
+	int thred_num;
 
 	/* Performance Checker. */
 	uint64_t WriteSize[WORKER_NUMBER];

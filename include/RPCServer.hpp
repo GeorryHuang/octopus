@@ -33,7 +33,7 @@ private:
 	int ServerCount;
 	FileSystem *fs;
 	int cqSize;
-	int testCount;
+	int testCount[4];
 	Thread2ID th2id;
 	vector<RPCTask*> tasks;
 	bool UnlockWait;

@@ -22,9 +22,10 @@ RPCServer::RPCServer(int _cqSize) :cqSize(_cqSize) {
     //          socket->getNodeID());
 	//fs->rootInitialize(socket->getNodeID());
 	wk = new thread[cqSize]();
-	testCount = 0;
-	for (int i = 0; i < cqSize; i++)
+	for (int i = 0; i < cqSize; i++){
+		testCount[i] = 0;
 		wk[i] = thread(&RPCServer::Worker, this, i);
+	}
 }
 RPCServer::~RPCServer() {
 	Debug::notifyInfo("Stop RPCServer.");
@@ -114,6 +115,10 @@ void RPCServer::RequestPoller(int id) {
 
 		GeneralSendBuffer *send = (GeneralSendBuffer*)bufferRecv;
 		// cout<<"message:"<<send->message<<endl;
+		if(testCount[0] == 0 ){
+			Debug::startTimer("TestPut");
+		}
+		testCount[id]++;
 		switch (send->message) {
 			case MESSAGE_TEST: {
 
@@ -181,6 +186,19 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 		send->message = ONVM_DS_CREATE;
 		uint16_t offset = 0;
 		uint32_t imm = NodeID<<16 | offset;
+		bool shouldStop = false;
+		for (int i=0;i<4;i++){
+			if(testCount[i]!=5000000){
+				shouldStop = false;
+				break;
+			}else {
+				shouldStop = true;
+			}
+		}
+		if(shouldStop){
+			Debug::endTimer();
+			exit(-1)
+		}
 		socket->RdmaWrite(0, (uint64_t)send, 2*4096, bufferSend->size, imm, 1);
 	} else if (send->message == ONVM_DS_CREATE){
 		// cout<<"DS received create"<<endl;
