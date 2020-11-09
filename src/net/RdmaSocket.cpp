@@ -1030,16 +1030,16 @@ bool RdmaSocket::RdmaWrite(uint16_t NodeID, uint64_t SourceBuffer, uint64_t DesB
     wr.send_flags = IBV_SEND_SIGNALED;
     wr.wr.rdma.remote_addr = DesBuffer + peer->RegisteredMemory;
     wr.wr.rdma.rkey        = peer->rkey;
-    // cout<<"ibv_post_send to NodeID:"<<NodeID<<endl;
-    // cout<<"The qp index is "<<TaskID<<endl;
-    // cout<<"wr.wr_id"<<wr.wr_id<<endl;
-    // cout<<"wr.sg_list.addr"<<wr.sg_list->addr<<endl;
-    // cout<<"wr.sg_list.length"<<wr.sg_list->length<<endl;
-    // cout<<"wr.sg_list.lkey"<<wr.sg_list->lkey<<endl;
-    // cout<<"wr.num_sge"<<wr.num_sge <<endl;
-    if(wr.opcode != IBV_WR_RDMA_WRITE_WITH_IMM){
-        cout<<"wr.opcode != IBV_WR_RDMA_WRITE_WITH_IMM"<<endl;
-    }
+    cout<<"ibv_post_send to NodeID:"<<NodeID<<endl;
+    cout<<"The qp index is "<<TaskID<<endl;
+    cout<<"wr.wr_id"<<wr.wr_id<<endl;
+    cout<<"wr.sg_list.addr"<<wr.sg_list->addr<<endl;
+    cout<<"wr.sg_list.length"<<wr.sg_list->length<<endl;
+    cout<<"wr.sg_list.lkey"<<wr.sg_list->lkey<<endl;
+    cout<<"wr.num_sge"<<wr.num_sge <<endl;
+    // if(wr.opcode != IBV_WR_RDMA_WRITE_WITH_IMM){
+    //     cout<<"wr.opcode != IBV_WR_RDMA_WRITE_WITH_IMM"<<endl;
+    // }
     if (ibv_post_send(peer->qp[TaskID], &wr, &wrBad)) {
         Debug::notifyError("Send with RDMA_WRITE(WITH_IMM) failed.");
         printf("%s\n", strerror(errno));
