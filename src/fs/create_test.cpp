@@ -60,7 +60,7 @@ int main()
     cout << "sendding message start from:" << bufferRecv << endl;
     A::send = (GeneralSendBuffer *)bufferRecv;
     A::bufferSend = (ExtentReadSendBuffer *)A::send;
-    A::bufferSend->size = sizeof(ExtentReadSendBuffer);
+    A::bufferSend->size = test_message_size;
     A::send->message = ONVM_DS_CREATE;
     uint16_t offset = 0;
     A::imm = A::NodeID << 16 | offset;
