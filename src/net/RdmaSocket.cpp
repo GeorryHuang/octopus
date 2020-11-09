@@ -1020,13 +1020,13 @@ bool RdmaSocket::RdmaWrite(uint16_t NodeID, uint64_t SourceBuffer, uint64_t DesB
     wr.wr_id      = 0;
     wr.sg_list    = &sg;
     wr.num_sge    = 1;
-    if((int32_t)imm == -1) {
+    // if((int32_t)imm == -1) {
         wr.opcode     = IBV_WR_RDMA_WRITE;
-    } else {
-        // cout<<"send with IMM"<<endl;
-        wr.opcode     = IBV_WR_RDMA_WRITE_WITH_IMM;
-        wr.imm_data   = imm;
-    }
+    // } else {
+    //     // cout<<"send with IMM"<<endl;
+    //     wr.opcode     = IBV_WR_RDMA_WRITE_WITH_IMM;
+    //     wr.imm_data   = imm;
+    // }
     wr.send_flags = IBV_SEND_SIGNALED;
     wr.wr.rdma.remote_addr = DesBuffer + peer->RegisteredMemory;
     wr.wr.rdma.rkey        = peer->rkey;
