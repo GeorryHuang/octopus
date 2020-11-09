@@ -21,8 +21,8 @@ RPCServer::RPCServer(int _cqSize) :cqSize(_cqSize) {
     //          conf->getServerCount(),    
     //          socket->getNodeID());
 	//fs->rootInitialize(socket->getNodeID());
-	wk = new thread[cqSize]();
-	for (int i = 0; i < cqSize; i++){
+	wk = new thread[test_thread_count]();
+	for (int i = 0; i < test_thread_count; i++){
 		testCount[i] = 0;
 		wk[i] = thread(&RPCServer::Worker, this, i);
 	}
