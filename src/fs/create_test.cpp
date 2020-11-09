@@ -10,21 +10,27 @@ ExtentReadSendBuffer* bufferSend;
 GeneralSendBuffer *send;
 uint16_t NodeID = 1;
 /* Catch ctrl-c and destruct. */
+
+}
+
+
 void Stop(int signo)
 {
     Debug::notifyInfo("DMFS is terminated, Bye.");
     _exit(0);
 }
+
+
 void hzy_test(int i){
 for (int i = 0; i < 5000000; i++)
     {
-        socket->RdmaWrite(0, (uint64_t)send, NodeID * CLIENT_MESSAGE_SIZE, bufferSend->size, imm, 0);
+        A::socket->RdmaWrite(0, (uint64_t)A::send, A::NodeID * CLIENT_MESSAGE_SIZE, A::bufferSend->A::size, A::imm, 0);
         struct ibv_wc wc;
-        socket->PollCompletion(0, 1, &wc);
+        A::socket->PollCompletion(0, 1, &wc);
     }
     cout<<"Thread "<<i<<" Done!"<<endl;
 }
-using namespace A;
+
 int main()
 {
     
@@ -40,18 +46,18 @@ int main()
     Configuration *conf = new Configuration();
     MemoryManager *mem = new MemoryManager(mm, conf->getServerCount(), 2);
     mm = mem->getDmfsBaseAddress();
-    socket = new RdmaSocket(2, mm, mem->getDmfsTotalSize(), conf, true, 0);
-    socket->ONVMConnect(0);
+    A::socket = new RdmaSocket(2, mm, mem->getDmfsTotalSize(), conf, true, 0);
+    A::socket->ONVMConnect(0);
     cout << "sending create message to DS" << endl;
     uint64_t bufferRecv = mem->getDmfsBaseAddress();
     cout << "sendding message start from:" << bufferRecv << endl;
-    GeneralSendBuffer *send = (GeneralSendBuffer *)bufferRecv;
-    ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
-    bufferSend->size = sizeof(ExtentReadSendBuffer);
-    send->message = ONVM_DS_CREATE;
+    A::send = (GeneralSendBuffer *)bufferRecv;
+    A::bufferSend = (ExtentReadSendBuffer *)A::send;
+    A::bufferSend->size = sizeof(ExtentReadSendBuffer);
+    A::send->message = ONVM_DS_CREATE;
     uint16_t offset = 0;
-    imm = NodeID << 16 | offset;
-    cout << "sending message is :" << send->message << endl;
+    A::imm = A::NodeID << 16 | offset;
+    cout << "sending message is :" << A::send->message << endl;
 
 
     thread threads[test_thread_count];
@@ -65,5 +71,4 @@ int main()
 }
 
 
-}
 
