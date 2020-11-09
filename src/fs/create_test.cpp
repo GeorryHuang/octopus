@@ -2,14 +2,27 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include "global.h"
-
+namespace{
 RPCServer *server;
-
+RdmaSocket *socket;
+uint32_t imm;
+ExtentReadSendBuffer* bufferSend;
+GeneralSendBuffer *send;
+uint16_t NodeID = 1;
 /* Catch ctrl-c and destruct. */
 void Stop(int signo)
 {
     Debug::notifyInfo("DMFS is terminated, Bye.");
     _exit(0);
+}
+void hzy_test(int i){
+for (int i = 0; i < 5000000; i++)
+    {
+        socket->RdmaWrite(0, (uint64_t)send, NodeID * CLIENT_MESSAGE_SIZE, bufferSend->size, imm, 0);
+        struct ibv_wc wc;
+        socket->PollCompletion(0, 1, &wc);
+    }
+    cout<<"Thread "<<i<<" Done!"<<endl;
 }
 int main()
 {
@@ -25,7 +38,7 @@ int main()
     Configuration *conf = new Configuration();
     MemoryManager *mem = new MemoryManager(mm, conf->getServerCount(), 2);
     mm = mem->getDmfsBaseAddress();
-    RdmaSocket *socket = new RdmaSocket(2, mm, mem->getDmfsTotalSize(), conf, true, 0);
+    socket = new RdmaSocket(2, mm, mem->getDmfsTotalSize(), conf, true, 0);
     socket->ONVMConnect(0);
     cout << "sending create message to DS" << endl;
     uint64_t bufferRecv = mem->getDmfsBaseAddress();
@@ -33,16 +46,15 @@ int main()
     GeneralSendBuffer *send = (GeneralSendBuffer *)bufferRecv;
     ExtentReadSendBuffer *bufferSend = (ExtentReadSendBuffer *)send;
     bufferSend->size = sizeof(ExtentReadSendBuffer);
-    uint16_t NodeID = 1;
     send->message = ONVM_DS_CREATE;
     uint16_t offset = 0;
-    uint32_t imm = NodeID << 16 | offset;
+    imm = NodeID << 16 | offset;
     cout << "sending message is :" << send->message << endl;
 
 
     thread threads[test_thread_count];
     for(int i=0;i<test_thread_count;i++){
-        thread(&hzy_test, i);
+        thread(hzy_test, i);
     }
     while(true);
     
@@ -50,12 +62,6 @@ int main()
     // server->ProcessRequest(send, 0 , 0);
 }
 
-void hzy_test(int i){
-for (int i = 0; i < 5000000; i++)
-    {
-        socket->RdmaWrite(0, (uint64_t)send, NodeID * CLIENT_MESSAGE_SIZE, bufferSend->size, imm, 0);
-        struct ibv_wc wc;
-        socket->PollCompletion(0, 1, &wc);
-    }
-    cout<<"Thread "<<i<<" Done!"<<endl;
+
 }
+
