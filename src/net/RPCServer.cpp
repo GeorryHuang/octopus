@@ -186,6 +186,9 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 		send->message = ONVM_DS_CREATE;
 		uint16_t offset = 0;
 		uint32_t imm = NodeID<<16 | offset;
+		socket->RdmaWrite(0, (uint64_t)send, 2*4096, bufferSend->size, imm, 1);
+	} else if (send->message == ONVM_DS_CREATE){
+		// cout<<"DS received create"<<endl;
 		bool shouldStop = false;
 		for (int i=0;i<test_thread_count;i++){
 			if(testCount[i]!=5000000){
@@ -196,17 +199,6 @@ void RPCServer::ProcessRequest(GeneralSendBuffer *send, uint16_t NodeID, uint16_
 			}
 		}
 		if(shouldStop){
-			Debug::endTimer();
-			exit(-1)
-		}
-		socket->RdmaWrite(0, (uint64_t)send, 2*4096, bufferSend->size, imm, 1);
-	} else if (send->message == ONVM_DS_CREATE){
-		// cout<<"DS received create"<<endl;
-		testCount++;
-		if(testCount==1){
-			Debug::startTimer("TestCreate");
-		}
-		if(testCount == 5000000){
 			Debug::endTimer();
 			exit(0);
 		}
