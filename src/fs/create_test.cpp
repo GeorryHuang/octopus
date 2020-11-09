@@ -2,21 +2,24 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include "global.h"
-namespace A{
+#include <atomic>
 RPCServer *server;
+namespace A{
+
 RdmaSocket *socket;
 uint32_t imm;
 ExtentReadSendBuffer* bufferSend;
 GeneralSendBuffer *send;
 uint16_t NodeID = 1;
 /* Catch ctrl-c and destruct. */
-
+atomic_long total(0);
 }
 
 
 void Stop(int signo)
 {
     Debug::notifyInfo("DMFS is terminated, Bye.");
+    Debug::endTimer();
     _exit(0);
 }
 
@@ -24,11 +27,15 @@ void Stop(int signo)
 void hzy_test(int i){
 for (int i = 0; i < 5000000; i++)
     {
-        A::socket->RdmaWrite(0, (uint64_t)A::send, A::NodeID * CLIENT_MESSAGE_SIZE, A::bufferSend->A::size, A::imm, 0);
+        A::socket->RdmaWrite(0, (uint64_t)A::send, A::NodeID * CLIENT_MESSAGE_SIZE, A::bufferSend->size, A::imm, 0);
         struct ibv_wc wc;
         A::socket->PollCompletion(0, 1, &wc);
     }
     cout<<"Thread "<<i<<" Done!"<<endl;
+    A::total++;
+    if(A::total == test_thread_count){
+        Stop(0);
+    }
 }
 
 int main()
@@ -59,10 +66,10 @@ int main()
     A::imm = A::NodeID << 16 | offset;
     cout << "sending message is :" << A::send->message << endl;
 
-
+    Debug::startTimer("TestPut");
     thread threads[test_thread_count];
     for(int i=0;i<test_thread_count;i++){
-        thread(hzy_test, i);
+        threads[i] = thread(hzy_test, i);
     }
     while(true);
     

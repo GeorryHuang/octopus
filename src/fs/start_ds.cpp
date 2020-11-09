@@ -2,6 +2,7 @@
 #include <sys/wait.h>  
 #include <sys/types.h>
 #include <unistd.h>
+#include "global.h"
 
 RPCServer *server;
 
@@ -13,7 +14,7 @@ void Stop (int signo) {
 }
 int main() {
     signal(SIGINT, Stop);
-    server = new RPCServer(2);
+    server = new RPCServer(test_thread_count);
     while(true){
         sleep(5);
         // cout<<"DS running"<<endl;
