@@ -57,11 +57,11 @@ TxManager* RPCServer::getTxManagerInstance() {
 }
 
 void RPCServer::Worker(int id) {
-	uint32_t tid = gettid();
+	// uint32_t tid = gettid();
 	// gettimeofday(&startt, NULL);
 	Debug::notifyInfo("Worker %d, tid = %d", id, tid);
-	th2id[tid] = id;
-	mem->setID(id);
+	// th2id[tid] = id;
+	// mem->setID(id);
 	while (true) {
 		RequestPoller(id);
 	}
